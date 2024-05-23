@@ -27,6 +27,9 @@ public class EndpointHitServiceImpl implements EndpointHitService {
     @Override
     public List<ViewStatDto> getStat(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
         List<EndpointHitProjection> hits;
+        if (uris == null || uris.isEmpty()) {
+            uris = List.of();
+        }
         if (unique) {
             hits = endpointHitRepository.findAllUniqueHit(start, end, uris);
         } else {

@@ -1,18 +1,18 @@
 version: '3.1'
 services:
-  stat-server:
+  stats-server:
     build: ./ewm-stat-service/stat-server
     container_name: stat-server
     depends_on:
-      - stat-db
+      - stats-db
     ports:
       - "9090:9090"
     environment:
-          - SPRING_DATASOURCE_URL=jdbc:postgresql://stat-db:5432/stat
+          - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/stat
           - SPRING_DATASOURCE_USERNAME=stat_user
           - SPRING_DATASOURCE_PASSWORD=statpass
 
-  stat-db:
+  stats-db:
     image: postgres:14-alpine
     volumes:
       - stat-data:/var/lib/postgresql/data
