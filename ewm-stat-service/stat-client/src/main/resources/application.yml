@@ -1,0 +1,7 @@
+logging.level:
+  org.springframework.web.client.RestTemplate: debug
+
+#  org.apache.http: DEBUG
+#  httpclient.wire: DEBUG
+
+stat-server.url: http://localhost:9090
