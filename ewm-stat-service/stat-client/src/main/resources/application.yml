@@ -3,5 +3,3 @@ logging.level:
 
 #  org.apache.http: DEBUG
 #  httpclient.wire: DEBUG
-
-stat-server.url: http://localhost:9090

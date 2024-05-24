@@ -1,4 +1,4 @@
-package ru.practicum.endpointHit;
+package ru.practicum.client;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -6,25 +6,24 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
-import ru.practicum.requestHit.dto.EndpointHitDto;
+import ru.practicum.HitDto;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Service
+@Component
 @Validated
-public class EndpointHitClient {
+public class StatClient {
     private final RestTemplate rest;
 
     @Autowired
-    public EndpointHitClient(@Value("${stat-server.url}") String serverUrl,
-                             RestTemplateBuilder builder) {
+    public StatClient(@Value("${stat-server.url}") String serverUrl,
+                      RestTemplateBuilder builder) {
         this.rest =
                 builder
                         .uriTemplateHandler(new DefaultUriBuilderFactory(serverUrl))
@@ -33,15 +32,14 @@ public class EndpointHitClient {
     }
 
     public void hits(String app, String uri, String ip, LocalDateTime timestamp) {
-        EndpointHitDto endpointHitDto = new EndpointHitDto(app, uri, ip, timestamp);
-        post(endpointHitDto);
+        HitDto hitDto = new HitDto(app, uri, ip, timestamp);
+        post(hitDto);
     }
 
     public ResponseEntity<Object> getStat(String start, String end, List<String> uris, boolean unique) {
         String urisParam = String.join("&uris=", uris);
         String path = String.format("/stats?start=%s&end=%s&uris=%s&unique=%s",
-                java.net.URLEncoder.encode(start, StandardCharsets.UTF_8),
-                java.net.URLEncoder.encode(end, StandardCharsets.UTF_8), urisParam, unique);
+                start, end, urisParam, unique);
         return get(path);
     }
 
@@ -62,7 +60,7 @@ public class EndpointHitClient {
         } catch (HttpStatusCodeException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsByteArray());
         }
-        return prepareGatewayResponse(statServerResponse);
+        return prepareClientResponse(statServerResponse);
     }
 
     private HttpHeaders defaultHeaders() {
@@ -73,7 +71,7 @@ public class EndpointHitClient {
         return headers;
     }
 
-    private static ResponseEntity<Object> prepareGatewayResponse(ResponseEntity<Object> response) {
+    private static ResponseEntity<Object> prepareClientResponse(ResponseEntity<Object> response) {
         if (response.getStatusCode().is2xxSuccessful()) {
             return response;
         }

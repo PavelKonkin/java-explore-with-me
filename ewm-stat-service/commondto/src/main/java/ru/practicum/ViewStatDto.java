@@ -1,4 +1,4 @@
-package ru.practicum.requestHit.dto;
+package ru.practicum;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ViewStatDto {
+    private Long hits;
     private String app;
     private String uri;
-    private Integer hits;
 }

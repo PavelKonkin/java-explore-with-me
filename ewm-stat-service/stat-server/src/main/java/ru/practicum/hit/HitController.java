@@ -1,4 +1,4 @@
-package ru.practicum.endpointHit;
+package ru.practicum.hit;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -6,8 +6,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.requestHit.dto.EndpointHitDto;
-import ru.practicum.requestHit.dto.ViewStatDto;
+import ru.practicum.HitDto;
+import ru.practicum.ViewStatDto;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
@@ -16,19 +16,19 @@ import java.util.List;
 @RestController
 @Slf4j
 @Validated
-public class EndpointHitController {
-    private final EndpointHitService endpointHitService;
+public class HitController {
+    private final HitService hitService;
 
     @Autowired
-    public EndpointHitController(EndpointHitService endpointHitService) {
-        this.endpointHitService = endpointHitService;
+    public HitController(HitService hitService) {
+        this.hitService = hitService;
     }
 
     @PostMapping("/hit")
     @ResponseStatus(HttpStatus.CREATED)
-    public void hit(@Valid @RequestBody EndpointHitDto endpointHitDto) {
-        log.info("Получен запрос на регистрацию запроса к эндпойнту {}", endpointHitDto);
-        endpointHitService.hits(endpointHitDto);
+    public void hit(@Valid @RequestBody HitDto hitDto) {
+        log.info("Получен запрос на регистрацию запроса к эндпойнту {}", hitDto);
+        hitService.hits(hitDto);
     }
 
     @GetMapping("/stats")
@@ -38,7 +38,7 @@ public class EndpointHitController {
                                       @RequestParam(required = false, defaultValue = "false") boolean unique) {
         log.info("Получен запрос на статистику с даты {} по дату {} для адресов {}, только уникальные ip - {}",
                 start, end, uris, unique);
-        List<ViewStatDto> result = endpointHitService.getStat(start, end, uris, unique);
+        List<ViewStatDto> result = hitService.getStat(start, end, uris, unique);
         log.info("Получена статистика вызовов эндпойнтов {}", result);
         return result;
     }

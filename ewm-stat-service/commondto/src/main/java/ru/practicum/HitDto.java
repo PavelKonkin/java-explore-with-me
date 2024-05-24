@@ -1,4 +1,4 @@
-package ru.practicum.requestHit.dto;
+package ru.practicum;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class EndpointHitDto {
+public class HitDto {
     @NotBlank
     private String app;
     @NotBlank
