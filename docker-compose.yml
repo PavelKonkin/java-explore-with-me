@@ -32,8 +32,11 @@ services:
     depends_on:
       - ewm-db
     environment:
-      SPRING_ACTIVE_PROFILE: docker
-      STAT-SERVER_URL: http://stat-server:9090
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm
+      - SPRING_DATASOURCE_USERNAME=ewm_user
+      - SPRING_DATASOURCE_PASSWORD=ewmpass
+#      - SPRING_ACTIVE_PROFILE=docker
+      - STAT-SERVER_URL=http://stat-server:9090
 
   ewm-db:
     image: postgres:14-alpine
