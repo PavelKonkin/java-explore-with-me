@@ -174,8 +174,8 @@ public class PublicEventTest {
 
     @Test
     public void get_whenEventNotPublished_thenThrownException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> eventService.get(event3NotPublished.getId(), ipAddress, uri));
-        assertThat(exception.getMessage(), is("Event must be published"));
+        assertThat(exception.getMessage(), is("Event with id=" + event3NotPublished.getId() + " was not found"));
     }
 }

@@ -1,4 +1,4 @@
-package ru.practicum.user;
+package ru.practicum.adminapi;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ import java.util.List;
 @Validated
 public class AdminUserController {
     private final AdminUserService adminUserService;
-    private final Sort sort = Sort.by("id").descending();
+    private final Sort sort = Sort.by("id").ascending();
 
 
     @Autowired

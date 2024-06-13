@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.adminapi.AdminUserController;
+import ru.practicum.adminapi.AdminUserService;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.page.OffsetPage;
 import ru.practicum.user.dto.NewUserRequest;
@@ -36,7 +38,7 @@ public class AdminUserControllerTest {
     private MockMvc mvc;
     private UserDto userDto;
     private NewUserRequest newUserRequest;
-    private final Sort sort = Sort.by("id").descending();
+    private final Sort sort = Sort.by("id").ascending();
     private final Pageable page = new OffsetPage(0, 10, sort);
     private final Pageable wrongPage = new OffsetPage(-1, 10, sort);
 

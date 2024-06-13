@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import ru.practicum.participationrequest.ParticipationRequestStatus;
 import ru.practicum.participationrequest.dto.ParticipationRequestDto;
 
@@ -16,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -39,17 +41,17 @@ public class PrivateParticipationRequestControllerTest {
     public void setup() {
         participationRequestDto = ParticipationRequestDto.builder()
                 .id(requestId)
-                .requesterId(userId)
-                .eventId(eventId)
+                .requester(userId)
+                .event(eventId)
                 .created(created)
                 .status(ParticipationRequestStatus.PENDING.name())
                 .build();
         participationRequestCanceledDto = ParticipationRequestDto.builder()
                 .id(requestId)
-                .requesterId(userId)
-                .eventId(eventId)
+                .requester(userId)
+                .event(eventId)
                 .created(created)
-                .status(ParticipationRequestStatus.CANCELED.name())
+                .status(ParticipationRequestStatus.REJECTED.name())
                 .build();
     }
 
@@ -64,14 +66,27 @@ public class PrivateParticipationRequestControllerTest {
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(participationRequestDto.getId()), Long.class))
-                .andExpect(jsonPath("$.requesterId",
-                        is(participationRequestDto.getRequesterId()), Long.class))
-                .andExpect(jsonPath("$.eventId", is(participationRequestDto.getEventId()), Long.class))
+                .andExpect(jsonPath("$.requester",
+                        is(participationRequestDto.getRequester()), Long.class))
+                .andExpect(jsonPath("$.event", is(participationRequestDto.getEvent()), Long.class))
                 .andExpect(jsonPath("$.created",
                         is(participationRequestDto.getCreated()
                                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))))
                 .andExpect(jsonPath("$.status", is(participationRequestDto.getStatus())));
         verify(participationRequestService, times(1))
+                .add(any(Long.class), any(Long.class), any(LocalDateTime.class));
+    }
+
+    @Test
+    public void add_whenPathVariableMissing_thenThrownException() throws Exception {
+        mvc.perform(post("/users/" + userId + "/requests")
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(MissingServletRequestParameterException.class,
+                        result.getResolvedException()));;
+        verify(participationRequestService, never())
                 .add(any(Long.class), any(Long.class), any(LocalDateTime.class));
     }
 
@@ -86,9 +101,9 @@ public class PrivateParticipationRequestControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.[0].id", is(participationRequestDto.getId()), Long.class))
-                .andExpect(jsonPath("$.[0].requesterId",
-                        is(participationRequestDto.getRequesterId()), Long.class))
-                .andExpect(jsonPath("$.[0].eventId", is(participationRequestDto.getEventId()), Long.class))
+                .andExpect(jsonPath("$.[0].requester",
+                        is(participationRequestDto.getRequester()), Long.class))
+                .andExpect(jsonPath("$.[0].event", is(participationRequestDto.getEvent()), Long.class))
                 .andExpect(jsonPath("$.[0].created",
                         is(participationRequestDto.getCreated()
                                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))))
@@ -106,9 +121,9 @@ public class PrivateParticipationRequestControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(participationRequestCanceledDto.getId()), Long.class))
-                .andExpect(jsonPath("$.requesterId",
-                        is(participationRequestCanceledDto.getRequesterId()), Long.class))
-                .andExpect(jsonPath("$.eventId", is(participationRequestCanceledDto.getEventId()), Long.class))
+                .andExpect(jsonPath("$.requester",
+                        is(participationRequestCanceledDto.getRequester()), Long.class))
+                .andExpect(jsonPath("$.event", is(participationRequestCanceledDto.getEvent()), Long.class))
                 .andExpect(jsonPath("$.created",
                         is(participationRequestCanceledDto.getCreated()
                                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))))

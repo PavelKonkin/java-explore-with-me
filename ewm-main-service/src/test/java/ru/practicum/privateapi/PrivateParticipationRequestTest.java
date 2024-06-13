@@ -121,8 +121,8 @@ public class PrivateParticipationRequestTest {
 
         assertThat(actualResult.getClass(), is(ParticipationRequestDto.class));
         assertThat(actualResult.getId(), notNullValue());
-        assertThat(actualResult.getRequesterId(), is(requester2.getId()));
-        assertThat(actualResult.getEventId(), is(event.getId()));
+        assertThat(actualResult.getRequester(), is(requester2.getId()));
+        assertThat(actualResult.getEvent(), is(event.getId()));
     }
 
     @Test

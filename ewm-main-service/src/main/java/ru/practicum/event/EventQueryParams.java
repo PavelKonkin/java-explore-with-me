@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
+import ru.practicum.validator.DateComparisonConstraint;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Pattern;
@@ -14,6 +15,7 @@ import java.util.List;
 @Data
 @Builder
 @AllArgsConstructor
+@DateComparisonConstraint
 public class EventQueryParams {
     private String text;
 

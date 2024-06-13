@@ -47,6 +47,7 @@ public class EventMapper {
                 .location(locationMapper.convertLocation(event.getLocation()))
                 .participantLimit(event.getParticipantLimit())
                 .state(event.getState())
+                .requestModeration(event.isRequestModeration())
                 .build();
     }
 

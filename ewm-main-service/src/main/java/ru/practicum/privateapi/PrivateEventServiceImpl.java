@@ -8,6 +8,7 @@ import ru.practicum.category.CategoryRepository;
 import ru.practicum.event.*;
 import ru.practicum.event.dto.*;
 import ru.practicum.eventutil.EventUtilService;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.participationrequest.ParticipationRequest;
 import ru.practicum.participationrequest.ParticipationRequestMapper;
@@ -155,14 +156,14 @@ public class PrivateEventServiceImpl implements PrivateEventService {
         List<ParticipationRequest> requests = requestRepository.findAllByIdIn(updateRequest.getRequestIds());
 
         if (requests.stream().anyMatch(request -> request.getStatus() != ParticipationRequestStatus.PENDING)) {
-            throw new IllegalArgumentException("Not all requests are in PENDING status");
+            throw new ConflictException("Not all requests are in PENDING status");
         }
 
         EventRequestStatusUpdateResult.EventRequestStatusUpdateResultBuilder result
                 = EventRequestStatusUpdateResult.builder();
         if (!requests.isEmpty()) {
             if (RequestUpdateAction.REJECTED.equals(updateRequest.getStatus())) { // отклоняем все
-                result.rejectedRequests(updateRequestsStatus(requests, ParticipationRequestStatus.CANCELED));
+                result.rejectedRequests(updateRequestsStatus(requests, ParticipationRequestStatus.REJECTED));
             } else { // принимаем или отклоняем если достигнут лимит участников
                 List<ParticipationRequest> confirmedRequests = requestRepository
                         .findAllByEventIdAndStatus(eventId, ParticipationRequestStatus.CONFIRMED);
@@ -170,7 +171,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
                 int participantLimit = event.getParticipantLimit();
 
                 if (participantLimit != 0 && confirmedRequestCount >= participantLimit) { // лимит достигнут - отклоняем
-                    result.rejectedRequests(updateRequestsStatus(requests, ParticipationRequestStatus.CANCELED));
+                    throw new ConflictException("Event participation limit has reached");
                 } else if (participantLimit == 0) { // нет лимита - принимаем все
                     result.confirmedRequests(updateRequestsStatus(requests, ParticipationRequestStatus.CONFIRMED));
                 } else { //часть заявок принимаем - до лимита, остальные отклоняем
@@ -183,7 +184,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
                             ParticipationRequestStatus.CONFIRMED));
                     if (!requestToCancel.isEmpty()) {
                         result.rejectedRequests(updateRequestsStatus(requestToCancel,
-                                ParticipationRequestStatus.CANCELED));
+                                ParticipationRequestStatus.REJECTED));
                     }
                 }
             }
@@ -204,17 +205,7 @@ public class PrivateEventServiceImpl implements PrivateEventService {
 
     private void checkEventAvailabilityToUpdate(Event event, UpdateEventUserRequest userRequest) {
         if (EventState.PUBLISHED.equals(event.getState())) {
-            throw new IllegalArgumentException("Only pending or canceled events can be changed");
-        }
-
-        if (EventState.PENDING.equals(event.getState())
-                && StateUserAction.SEND_TO_REVIEW.equals(userRequest.getStateAction())) {
-            throw new IllegalArgumentException("Only canceled events can be sent to review");
-        }
-
-        if (EventState.CANCELED.equals(event.getState())
-                && StateUserAction.CANCEL_REVIEW.equals(userRequest.getStateAction())) {
-            throw new IllegalArgumentException("Only pending events can be canceled");
+            throw new ConflictException("Only pending or canceled events can be changed");
         }
     }
 

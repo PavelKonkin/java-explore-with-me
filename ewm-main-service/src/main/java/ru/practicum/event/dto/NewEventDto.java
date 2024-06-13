@@ -5,9 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.hibernate.validator.constraints.Length;
-import ru.practicum.validator.DateComparisonConstraint;
+import ru.practicum.validator.DateInFutureByHoursConstraint;
 
-import javax.validation.constraints.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PositiveOrZero;
 import java.time.LocalDateTime;
 
 @Data
@@ -22,7 +24,7 @@ public class NewEventDto {
     private String description;
     private long category;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    @DateComparisonConstraint(hoursCount = 2)
+    @DateInFutureByHoursConstraint(hoursCount = 2)
     private LocalDateTime eventDate;
     private boolean paid;
     private boolean requestModeration;
@@ -36,7 +38,7 @@ public class NewEventDto {
 
     public NewEventDto() {
         this.paid = false;
-        this.requestModeration = false;
+        this.requestModeration = true;
         this.participantLimit = 0;
     }
 }

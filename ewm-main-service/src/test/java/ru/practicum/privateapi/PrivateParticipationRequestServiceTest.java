@@ -42,7 +42,6 @@ public class PrivateParticipationRequestServiceTest {
     private PrivateParticipationRequestServiceImpl participationRequestService;
 
     private User user;
-    private User user2;
     private Event event;
     private Event eventSameRequester;
     private Event eventNotPublished;
@@ -58,7 +57,7 @@ public class PrivateParticipationRequestServiceTest {
         user = User.builder()
                 .id(1L)
                 .build();
-        user2 = User.builder()
+        User user2 = User.builder()
                 .id(2L)
                 .build();
         event = Event.builder()
@@ -95,7 +94,7 @@ public class PrivateParticipationRequestServiceTest {
                 .id(1L)
                 .requester(user)
                 .event(event)
-                .status(ParticipationRequestStatus.CANCELED)
+                .status(ParticipationRequestStatus.REJECTED)
                 .build();
         participationRequestToSave = ParticipationRequest.builder()
                 .requester(user)
@@ -105,17 +104,17 @@ public class PrivateParticipationRequestServiceTest {
                 .build();
         participationRequestDto = ParticipationRequestDto.builder()
                 .id(participationRequest.getId())
-                .requesterId(user.getId())
-                .eventId(event.getId())
+                .requester(user.getId())
+                .event(event.getId())
                 .created(participationRequest.getCreated())
                 .status(ParticipationRequestStatus.CONFIRMED.name())
                 .build();
         participationRequestCanceledDto = ParticipationRequestDto.builder()
                 .id(participationRequestCanceled.getId())
-                .requesterId(user.getId())
-                .eventId(event.getId())
+                .requester(user.getId())
+                .event(event.getId())
                 .created(participationRequestCanceled.getCreated())
-                .status(ParticipationRequestStatus.CANCELED.name())
+                .status(ParticipationRequestStatus.REJECTED.name())
                 .build();
     }
 
@@ -202,7 +201,8 @@ public class PrivateParticipationRequestServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(eventRepository.findById(eventWithParticipantLimit.getId()))
                 .thenReturn(Optional.of(eventWithParticipantLimit));
-        when(participationRequestRepository.findAllByEventId(eventWithParticipantLimit.getId()))
+        when(participationRequestRepository
+                .findAllByEventIdAndStatus(eventWithParticipantLimit.getId(), ParticipationRequestStatus.CONFIRMED))
                 .thenReturn(List.of(participationRequest, participationRequest,
                         participationRequest, participationRequest, participationRequest));
 
@@ -213,7 +213,7 @@ public class PrivateParticipationRequestServiceTest {
         verify(userRepository, times(1)).findById(user.getId());
         verify(eventRepository, times(1)).findById(eventWithParticipantLimit.getId());
         verify(participationRequestRepository, times(1))
-                .findAllByEventId(eventWithParticipantLimit.getId());
+                .findAllByEventIdAndStatus(eventWithParticipantLimit.getId(), ParticipationRequestStatus.CONFIRMED);
         verify(participationRequestRepository, never()).save(participationRequestToSave);
         verify(participationRequestMapper, never())
                 .convertParticipationRequest(participationRequest);

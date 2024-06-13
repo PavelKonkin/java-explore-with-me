@@ -1,9 +1,12 @@
-package ru.practicum.user;
+package ru.practicum.adminapi;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.user.User;
+import ru.practicum.user.UserMapper;
+import ru.practicum.user.UserRepository;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 

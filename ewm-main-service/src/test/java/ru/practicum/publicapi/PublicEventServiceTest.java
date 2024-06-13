@@ -147,7 +147,7 @@ public class PublicEventServiceTest {
 
     @Test
     public void get_whenSuccessful_thenReturnEventFullDto() {
-        when(eventRepository.findById(event1.getId())).thenReturn(Optional.of(event1));
+        when(eventRepository.findByIdAndState(event1.getId(), EventState.PUBLISHED)).thenReturn(Optional.of(event1));
         when(eventMapper.convertEventToFullDto(event1)).thenReturn(eventFullDto);
         doNothing().when(statClient)
                 .hits(any(String.class), any(String.class), any(String.class), any(LocalDateTime.class));
@@ -160,7 +160,7 @@ public class PublicEventServiceTest {
         EventFullDto actualEventFullDto = eventService.get(event1.getId(), uri, ipAddress);
 
         assertThat(eventFullDto, is(actualEventFullDto));
-        verify(eventRepository, times(1)).findById(event1.getId());
+        verify(eventRepository, times(1)).findByIdAndState(event1.getId(), EventState.PUBLISHED);
         verify(eventMapper, times(1)).convertEventToFullDto(event1);
         verify(statClient, times(1))
                 .hits(any(String.class), any(String.class), any(String.class), any(LocalDateTime.class));
@@ -173,12 +173,12 @@ public class PublicEventServiceTest {
     @Test
     public void get_whenEventNotFound_thenThrownException() {
         long wrongId = 66L;
-        when(eventRepository.findById(wrongId)).thenReturn(Optional.empty());
+        when(eventRepository.findByIdAndState(wrongId, EventState.PUBLISHED)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> eventService.get(wrongId, uri, ipAddress));
         assertThat(exception.getMessage(), is("Event with id=" + wrongId + " was not found"));
-        verify(eventRepository, times(1)).findById(wrongId);
+        verify(eventRepository, times(1)).findByIdAndState(wrongId, EventState.PUBLISHED);
         verify(eventMapper, never()).convertEventToFullDto(any(Event.class));
         verify(statClient, never())
                 .hits(any(String.class), any(String.class), any(String.class), any(LocalDateTime.class));
@@ -190,12 +190,14 @@ public class PublicEventServiceTest {
 
     @Test
     public void get_whenEventNotPublished_thenThrownException() {
-        when(eventRepository.findById(event3NotPublished.getId())).thenReturn(Optional.of(event3NotPublished));
+        when(eventRepository.findByIdAndState(event3NotPublished.getId(), EventState.PUBLISHED))
+                .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> eventService.get(event3NotPublished.getId(), uri, ipAddress));
-        assertThat(exception.getMessage(), is("Event must be published"));
-        verify(eventRepository, times(1)).findById(event3NotPublished.getId());
+        assertThat(exception.getMessage(), is("Event with id=" + event3NotPublished.getId() + " was not found"));
+        verify(eventRepository, times(1))
+                .findByIdAndState(event3NotPublished.getId(), EventState.PUBLISHED);
         verify(eventMapper, never()).convertEventToFullDto(any(Event.class));
         verify(statClient, never())
                 .hits(any(String.class), any(String.class), any(String.class), any(LocalDateTime.class));

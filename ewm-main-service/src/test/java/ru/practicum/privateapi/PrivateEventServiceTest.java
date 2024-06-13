@@ -14,6 +14,7 @@ import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.event.*;
 import ru.practicum.event.dto.*;
 import ru.practicum.eventutil.EventUtilService;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.page.OffsetPage;
 import ru.practicum.participationrequest.ParticipationRequest;
@@ -60,8 +61,6 @@ public class PrivateEventServiceTest {
     Pageable page = new OffsetPage(0, 10, sort);
 
     private User user;
-    private UserShortDto userDto;
-    private CategoryDto categoryDto;
     private Event event1;
     private Event event1Updated;
     private Event event1ToSave;
@@ -74,7 +73,6 @@ public class PrivateEventServiceTest {
     private EventFullDto eventFullDtoPopulated;
     private Category category;
     private NewEventDto newEventDto;
-    private LocationDto locationDto;
     private Location locationToSave;
     private Location location;
     private ParticipationRequest participationRequest1;
@@ -98,7 +96,7 @@ public class PrivateEventServiceTest {
                 .id(1L)
                 .name("test")
                 .build();
-        categoryDto = CategoryDto.builder()
+        CategoryDto categoryDto = CategoryDto.builder()
                 .id(category.getId())
                 .name(category.getName())
                 .build();
@@ -111,7 +109,7 @@ public class PrivateEventServiceTest {
                 .lon(locationToSave.getLon())
                 .lat(locationToSave.getLat())
                 .build();
-        locationDto = LocationDto.builder()
+        LocationDto locationDto = LocationDto.builder()
                 .lon(location.getLon())
                 .lat(location.getLat())
                 .build();
@@ -124,7 +122,7 @@ public class PrivateEventServiceTest {
                 .name("test")
                 .email("test@user.email")
                 .build();
-        userDto = UserShortDto.builder()
+        UserShortDto userDto = UserShortDto.builder()
                 .id(user.getId())
                 .name(user.getName())
                 .build();
@@ -434,7 +432,7 @@ public class PrivateEventServiceTest {
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        ConflictException exception = assertThrows(ConflictException.class,
                 () -> eventService.update(user.getId(), event1.getId(), updateRequest));
         assertThat(exception.getMessage(), is("Only pending or canceled events can be changed"));
         verify(userRepository, times(1)).findById(user.getId());
@@ -447,43 +445,62 @@ public class PrivateEventServiceTest {
     }
 
     @Test
-    public void update_whenCancelAlreadyCanceledEvent_thenThrownException() {
+    public void update_whenCancelAlreadyCanceledEvent_thenReturnSameEventFullDto() {
         event1.setState(EventState.CANCELED);
+        updateRequest.setStateAction(StateUserAction.CANCEL_REVIEW);
+        event1Updated.setState(EventState.CANCELED);
+        eventFullDtoUpdated1.setState(EventState.CANCELED);
+        eventFullDtoUpdatedPopulated1.setState(EventState.CANCELED);
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
+        when(eventRepository.save(event1Updated)).thenReturn(event1Updated);
+        when(eventMapper.convertEventToFullDto(event1Updated)).thenReturn(eventFullDtoUpdated1);
+        when(eventUtilService.getHitsByEvent(List.of(event1.getId()))).thenReturn(hitsByEvent);
+        when(eventUtilService.getConfirmedRequestCountById(List.of(event1.getId())))
+                .thenReturn(confirmedRequestCount);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> eventService.update(user.getId(), event1.getId(), updateRequest));
-        assertThat(exception.getMessage(), is("Only pending events can be canceled"));
+        EventFullDto actualEventFullDto = eventService.update(user.getId(), event1.getId(), updateRequest);
+
+        assertThat(eventFullDtoUpdatedPopulated1, is(actualEventFullDto));
         verify(userRepository, times(1)).findById(user.getId());
         verify(eventRepository, times(1))
                 .findByIdAndInitiatorId(event1.getId(), user.getId());
-        verify(eventRepository, never()).save(any(Event.class));
-        verify(eventMapper, never()).convertEventToFullDto(any(Event.class));
-        verify(eventUtilService, never()).getHitsByEvent(anyList());
-        verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
+        verify(eventRepository, times(1)).save(event1Updated);
+        verify(eventMapper, times(1)).convertEventToFullDto(event1Updated);
+        verify(eventUtilService, times(1)).getHitsByEvent(List.of(event1.getId()));
+        verify(eventUtilService, times(1))
+                .getConfirmedRequestCountById(List.of(event1.getId()));
     }
 
     @Test
     public void update_whenSentToReviewPendingEvent_thenThrownException() {
         updateRequest.setStateAction(StateUserAction.SEND_TO_REVIEW);
+        event1Updated.setState(EventState.PENDING);
+        eventFullDtoUpdated1.setState(EventState.PENDING);
+        eventFullDtoUpdatedPopulated1.setState(EventState.PENDING);
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
+        when(eventRepository.save(event1Updated)).thenReturn(event1Updated);
+        when(eventMapper.convertEventToFullDto(event1Updated)).thenReturn(eventFullDtoUpdated1);
+        when(eventUtilService.getHitsByEvent(List.of(event1.getId()))).thenReturn(hitsByEvent);
+        when(eventUtilService.getConfirmedRequestCountById(List.of(event1.getId())))
+                .thenReturn(confirmedRequestCount);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> eventService.update(user.getId(), event1.getId(), updateRequest));
-        assertThat(exception.getMessage(), is("Only canceled events can be sent to review"));
+        EventFullDto actualEventFullDto = eventService.update(user.getId(), event1.getId(), updateRequest);
+
+        assertThat(eventFullDtoUpdatedPopulated1, is(actualEventFullDto));
         verify(userRepository, times(1)).findById(user.getId());
         verify(eventRepository, times(1))
                 .findByIdAndInitiatorId(event1.getId(), user.getId());
-        verify(eventRepository, never()).save(any(Event.class));
-        verify(eventMapper, never()).convertEventToFullDto(any(Event.class));
-        verify(eventUtilService, never()).getHitsByEvent(anyList());
-        verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
+        verify(eventRepository, times(1)).save(event1Updated);
+        verify(eventMapper, times(1)).convertEventToFullDto(event1Updated);
+        verify(eventUtilService, times(1)).getHitsByEvent(List.of(event1.getId()));
+        verify(eventUtilService, times(1))
+                .getConfirmedRequestCountById(List.of(event1.getId()));
     }
 
     @Test
@@ -607,8 +624,8 @@ public class PrivateEventServiceTest {
 
     @Test
     public void updateRequests_whenAllRejected_thenReturnEventRequestStatusUpdateResult() {
-        participationRequestDtoUpdated1.setStatus(ParticipationRequestStatus.CANCELED.name());
-        participationRequestDtoUpdated2.setStatus(ParticipationRequestStatus.CANCELED.name());
+        participationRequestDtoUpdated1.setStatus(ParticipationRequestStatus.REJECTED.name());
+        participationRequestDtoUpdated2.setStatus(ParticipationRequestStatus.REJECTED.name());
         updateEventRequest.setStatus(RequestUpdateAction.REJECTED);
         updateEventResult
                 .setRejectedRequests(List.of(participationRequestDtoUpdated1, participationRequestDtoUpdated2));
@@ -630,7 +647,7 @@ public class PrivateEventServiceTest {
         assertThat(updateEventResult, is(actualResult));
         assertThat(actualResult.getRejectedRequests().size(), is(2));
         assertThat(actualResult.getRejectedRequests().get(0).getStatus(),
-                is(ParticipationRequestStatus.CANCELED.name()));
+                is(ParticipationRequestStatus.REJECTED.name()));
         verify(userRepository, times(1)).findById(user.getId());
         verify(eventRepository, times(1))
                 .findByIdAndInitiatorId(event1.getId(), user.getId());
@@ -644,7 +661,7 @@ public class PrivateEventServiceTest {
     @Test
     public void updateRequests_whenOneRejectedAndOneConfirmed_thenReturnEventRequestStatusUpdateResult() {
         participationRequestDtoUpdated1.setStatus(ParticipationRequestStatus.CONFIRMED.name());
-        participationRequestDtoUpdated2.setStatus(ParticipationRequestStatus.CANCELED.name());
+        participationRequestDtoUpdated2.setStatus(ParticipationRequestStatus.REJECTED.name());
 
         updateEventResult
                 .setRejectedRequests(List.of(participationRequestDtoUpdated2));
@@ -672,7 +689,7 @@ public class PrivateEventServiceTest {
         assertThat(updateEventResult, is(actualResult));
         assertThat(actualResult.getRejectedRequests().size(), is(1));
         assertThat(actualResult.getRejectedRequests().get(0).getStatus(),
-                is(ParticipationRequestStatus.CANCELED.name()));
+                is(ParticipationRequestStatus.REJECTED.name()));
         assertThat(actualResult.getConfirmedRequests().size(), is(1));
         assertThat(actualResult.getConfirmedRequests().get(0).getStatus(),
                 is(ParticipationRequestStatus.CONFIRMED.name()));
@@ -697,7 +714,7 @@ public class PrivateEventServiceTest {
         when(requestRepository.findAllByIdIn(updateEventRequest.getRequestIds()))
                 .thenReturn(List.of(participationRequest1, participationRequest2));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        ConflictException exception = assertThrows(ConflictException.class,
                 () -> eventService.updateRequests(user.getId(), event1.getId(), updateEventRequest));
         assertThat(exception.getMessage(), is("Not all requests are in PENDING status"));
         verify(userRepository, times(1)).findById(user.getId());

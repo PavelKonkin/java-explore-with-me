@@ -9,6 +9,13 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
+@NamedEntityGraph(name = "participationRequest.user.event", attributeNodes = {
+        @NamedAttributeNode("requester"),
+        @NamedAttributeNode("event")
+})
+@NamedEntityGraph(name = "participationRequest.event", attributeNodes = {
+        @NamedAttributeNode("event")
+})
 @Table(name = "participation_requests")
 @Getter
 @Setter

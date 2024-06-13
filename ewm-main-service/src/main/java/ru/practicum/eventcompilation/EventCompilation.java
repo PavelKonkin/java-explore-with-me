@@ -8,6 +8,9 @@ import javax.persistence.*;
 import java.util.Objects;
 
 @Entity
+@NamedEntityGraph(name = "eventCompilation.event", attributeNodes = {
+        @NamedAttributeNode("event"),
+})
 @IdClass(EventCompilationId.class)
 @Table(name = "event_compilation")
 @Getter

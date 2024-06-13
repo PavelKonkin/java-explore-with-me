@@ -24,7 +24,7 @@ public class PublicCompilationController {
     }
 
     @GetMapping
-    public List<CompilationDto> getAll(@RequestParam boolean pinned,
+    public List<CompilationDto> getAll(@RequestParam(defaultValue = "false") boolean pinned,
                                        @RequestParam(defaultValue = "0") @Min(0) int from,
                                        @RequestParam(defaultValue = "10") @Min(1) int size) {
         log.info("Получен запрос на подборки событий начиная с записи {}, количество записей {}, закрепленные {}",

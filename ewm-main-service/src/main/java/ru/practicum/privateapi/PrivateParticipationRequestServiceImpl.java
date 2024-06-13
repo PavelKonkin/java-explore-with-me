@@ -44,7 +44,7 @@ public class PrivateParticipationRequestServiceImpl implements PrivateParticipat
         checkRequest(requester, event);
 
         ParticipationRequestStatus requestStatus;
-        if (event.isRequestModeration()) {
+        if (event.getParticipantLimit() != 0 && event.isRequestModeration()) {
             requestStatus = ParticipationRequestStatus.PENDING;
         } else {
             requestStatus = ParticipationRequestStatus.CONFIRMED;
@@ -95,7 +95,8 @@ public class PrivateParticipationRequestServiceImpl implements PrivateParticipat
         int limitOfParticipants = event.getParticipantLimit();
         if (limitOfParticipants != 0) {
             List<ParticipationRequest> eventParticipation
-                    = participationRequestRepository.findAllByEventId(event.getId());
+                    = participationRequestRepository.findAllByEventIdAndStatus(event.getId(),
+                    ParticipationRequestStatus.CONFIRMED);
             if (limitOfParticipants <= eventParticipation.size()) {
                 throw new ConflictException("Limit of participants of event is exceeded");
             }

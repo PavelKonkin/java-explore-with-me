@@ -1,26 +1,26 @@
 package ru.practicum.validator;
 
+import ru.practicum.event.EventQueryParams;
+
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.time.LocalDateTime;
 
-public class DateComparisonValidator implements ConstraintValidator<DateComparisonConstraint, LocalDateTime> {
-
-    private int hoursCount;
+public class DateComparisonValidator implements ConstraintValidator<DateComparisonConstraint, EventQueryParams> {
 
     @Override
     public void initialize(DateComparisonConstraint constraint) {
-            this.hoursCount = constraint.hoursCount();
     }
 
     @Override
-    public boolean isValid(LocalDateTime value, ConstraintValidatorContext context) {
-
-        if (value == null) {
+    public boolean isValid(EventQueryParams model, ConstraintValidatorContext context) {
+        LocalDateTime startDate = model.getRangeStart();
+        LocalDateTime endDate = model.getRangeEnd();
+        if (startDate == null || endDate == null) {
             return true;
         }
 
-        return value.isAfter(LocalDateTime.now().plusHours(hoursCount));
+        return endDate.isAfter(startDate);
     }
 }
 

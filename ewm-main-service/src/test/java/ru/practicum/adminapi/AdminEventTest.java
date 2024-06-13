@@ -10,6 +10,7 @@ import ru.practicum.event.*;
 import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.StateAdminAction;
 import ru.practicum.event.dto.UpdateEventAdminRequest;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.participationrequest.ParticipationRequest;
 import ru.practicum.participationrequest.ParticipationRequestRepository;
@@ -166,7 +167,7 @@ public class AdminEventTest {
 
     @Test
     public void patch_whenReject_thenReturnCanceledEventFullDto() {
-        EventFullDto actualEventFullDto = eventService.patch(event1.getId(), adminRequestCancel);
+        EventFullDto actualEventFullDto = eventService.patch(event3NotPublished.getId(), adminRequestCancel);
 
         assertThat(actualEventFullDto, notNullValue());
         assertThat(actualEventFullDto.getClass(), is(EventFullDto.class));
@@ -197,24 +198,24 @@ public class AdminEventTest {
         adminRequestCancel.setCategory(wrongCategoryId);
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> eventService.patch(event1.getId(), adminRequestCancel));
+                () -> eventService.patch(event3NotPublished.getId(), adminRequestCancel));
         assertThat(exception.getMessage(), is("Category with id=" + wrongCategoryId + " was not found"));
     }
 
     @Test
     public void patch_whenPublishNotPendingEvent_thenThrownException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        ConflictException exception = assertThrows(ConflictException.class,
                 () -> eventService.patch(event1.getId(), adminRequestPublish));
         assertThat(exception.getMessage(), is("Cannot publish the event because it's not in the right state: "
                 + event1.getState()));
     }
 
     @Test
-    public void patch_whenRejectNotPublishedEvent_thenThrownException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> eventService.patch(event3NotPublished.getId(), adminRequestCancel));
-        assertThat(exception.getMessage(), is("Cannot cancel the event because it's not in the right state: "
-                + event3NotPublished.getState()));
+    public void patch_whenRejectNotPublishedEvent_thenReturnEventFullDto() {
+        EventFullDto actualEventFullDto = eventService.patch(event3NotPublished.getId(), adminRequestCancel);
+
+        assertThat(actualEventFullDto, notNullValue());
+        assertThat(actualEventFullDto.getId(), is(event3NotPublished.getId()));
     }
 
 }

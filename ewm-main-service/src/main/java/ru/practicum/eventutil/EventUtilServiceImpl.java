@@ -41,7 +41,7 @@ public class EventUtilServiceImpl implements EventUtilService {
 
         ResponseEntity<Object> response;
         try {
-            response = statClient.getStat(EVENTS_START, EVENTS_END, uris, false);
+            response = statClient.getStat(EVENTS_START, EVENTS_END, uris, true);
         } catch (Throwable e) {
             return hitsByEvent;
         }

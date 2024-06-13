@@ -13,6 +13,7 @@ import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.StateAdminAction;
 import ru.practicum.event.dto.UpdateEventAdminRequest;
 import ru.practicum.eventutil.EventUtilService;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.page.OffsetPage;
 
@@ -76,14 +77,17 @@ public class AdminEventServiceImpl implements AdminEventService {
         List<Long> eventIds = events.stream()
                 .map(Event::getId)
                 .collect(Collectors.toList());
-        Map<Long, Integer> hitsById = eventUtilService.getHitsByEvent(eventIds);
-        Map<Long, Long> confirmedRequestCount = eventUtilService.getConfirmedRequestCountById(eventIds);
         List<EventFullDto> result = events.stream()
                 .map(eventMapper::convertEventToFullDto)
                 .collect(Collectors.toList());
-        for (EventFullDto el : result) {
-            el.setViews(hitsById.getOrDefault(el.getId(), 0));
-            el.setConfirmedRequests(confirmedRequestCount.getOrDefault(el.getId(), 0L));
+        if (!result.isEmpty()) {
+            Map<Long, Integer> hitsById = eventUtilService.getHitsByEvent(eventIds);
+            Map<Long, Long> confirmedRequestCount = eventUtilService.getConfirmedRequestCountById(eventIds);
+
+            for (EventFullDto el : result) {
+                el.setViews(hitsById.getOrDefault(el.getId(), 0));
+                el.setConfirmedRequests(confirmedRequestCount.getOrDefault(el.getId(), 0L));
+            }
         }
         return result;
     }
@@ -96,7 +100,7 @@ public class AdminEventServiceImpl implements AdminEventService {
 
         if (StateAdminAction.PUBLISH_EVENT.equals(stateAction)) {
             if (!EventState.PENDING.equals(eventState)) {
-                throw new IllegalArgumentException("Cannot publish the event because it's not in the right state: "
+                throw new ConflictException("Cannot publish the event because it's not in the right state: "
                         + eventState);
             } else {
                 copyOfExistentEvent.state(EventState.PUBLISHED);
@@ -105,8 +109,8 @@ public class AdminEventServiceImpl implements AdminEventService {
         }
 
         if (StateAdminAction.REJECT_EVENT.equals(stateAction)) {
-            if (!EventState.PUBLISHED.equals(eventState)) {
-                throw new IllegalArgumentException("Cannot cancel the event because it's not in the right state: "
+            if (EventState.CANCELED.equals(eventState) || EventState.PUBLISHED.equals(eventState)) {
+                throw new ConflictException("Cannot cancel the event because it's not in the right state: "
                         + eventState);
             } else {
                 copyOfExistentEvent.state(EventState.CANCELED);
@@ -150,6 +154,9 @@ public class AdminEventServiceImpl implements AdminEventService {
         if (updateRequest.getParticipantLimit() != null) {
             copyOfExistentEvent.participantLimit(updateRequest.getParticipantLimit());
         }
-        return eventMapper.convertEventToFullDto(copyOfExistentEvent.build());
+
+        Event updatedEvent = eventRepository.save(copyOfExistentEvent.build());
+
+        return eventMapper.convertEventToFullDto(updatedEvent);
     }
 }

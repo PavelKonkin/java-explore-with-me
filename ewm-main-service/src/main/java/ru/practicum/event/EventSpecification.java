@@ -50,7 +50,12 @@ public class EventSpecification {
     }
 
     public static Specification<Event> isPaid(Boolean paid) {
-        return (root, query, builder) -> builder.equal(root.get("paid"), paid);
+        return (root, query, builder) -> {
+            if (paid == null || paid.equals(false)) {
+                return builder.conjunction();
+            }
+            return builder.equal(root.get("paid"), paid);
+        };
     }
 
     public static Specification<Event> hasConfirmedRequestsLessThanLimit(Boolean onlyAvailable) {

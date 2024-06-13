@@ -10,6 +10,7 @@ import ru.practicum.category.Category;
 import ru.practicum.category.CategoryRepository;
 import ru.practicum.event.*;
 import ru.practicum.event.dto.*;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.page.OffsetPage;
 import ru.practicum.participationrequest.ParticipationRequest;
@@ -242,27 +243,31 @@ public class PrivateEventTest {
 
     @Test
     public void update_whenEventPublished_thenThrownException() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        ConflictException exception = assertThrows(ConflictException.class,
                 () -> eventService.update(user.getId(), event2.getId(), updateEventUserRequest));
         assertThat(exception.getMessage(), is("Only pending or canceled events can be changed"));
     }
 
     @Test
-    public void update_whenSendToReviewPendingEvent_thenThrownException() {
+    public void update_whenSendToReviewPendingEvent_thenReturnSameEventFullDto() {
         updateEventUserRequest.setStateAction(StateUserAction.SEND_TO_REVIEW);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> eventService.update(user.getId(), event1.getId(), updateEventUserRequest));
-        assertThat(exception.getMessage(), is("Only canceled events can be sent to review"));
+        EventFullDto actualEventFullDto = eventService.update(user.getId(), event1.getId(), updateEventUserRequest);
+
+        assertThat(actualEventFullDto, notNullValue());
+        assertThat(actualEventFullDto.getId(), is(event1.getId()));
+        assertThat(actualEventFullDto.getState(), is(EventState.PENDING));
     }
 
     @Test
-    public void update_whenCancelCanceledEvent_thenThrownException() {
+    public void update_whenCancelCanceledEvent_thenReturnSameEventFullDto() {
         updateEventUserRequest.setStateAction(StateUserAction.CANCEL_REVIEW);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> eventService.update(user.getId(), event3.getId(), updateEventUserRequest));
-        assertThat(exception.getMessage(), is("Only pending events can be canceled"));
+        EventFullDto actualEventFullDto = eventService.update(user.getId(), event3.getId(), updateEventUserRequest);
+
+        assertThat(actualEventFullDto, notNullValue());
+        assertThat(actualEventFullDto.getId(), is(event3.getId()));
+        assertThat(actualEventFullDto.getState(), is(EventState.CANCELED));
     }
 
     @Test
@@ -346,7 +351,7 @@ public class PrivateEventTest {
         participationRequest1.setStatus(ParticipationRequestStatus.CONFIRMED);
         requestRepository.save(participationRequest1);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        ConflictException exception = assertThrows(ConflictException.class,
                 () -> eventService.updateRequests(user.getId(), event1.getId(), updateRequest));
         assertThat(exception.getMessage(), is("Not all requests are in PENDING status"));
     }

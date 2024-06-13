@@ -18,6 +18,7 @@ import ru.practicum.event.dto.LocationDto;
 import ru.practicum.event.dto.StateAdminAction;
 import ru.practicum.event.dto.UpdateEventAdminRequest;
 import ru.practicum.eventutil.EventUtilService;
+import ru.practicum.exception.ConflictException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -50,43 +51,31 @@ public class AdminEventServiceTest {
     private Event event1;
     private Event event1Updated;
     private Event event2;
-    private Event event2Updated;
     private EventFullDto eventFullDto1;
     private EventFullDto eventFullDto2;
     private EventFullDto eventFullDto1Updated;
-    private EventFullDto eventFullDto2Updated;
     private EventFullDto eventFullDto1ToUpdate;
-    private EventFullDto eventFullDto2ToUpdate;
     private UpdateEventAdminRequest adminRequestToPublish;
     private UpdateEventAdminRequest adminRequestToCancel;
     private final Map<Long, Integer> hitsByEvent = new HashMap<>();
     private final Map<Long, Long> confirmedRequestCount = new HashMap<>();
-    private Location locationToSave;
-    private Location locationSaved;
-    private LocationDto locationDto;
-    private Category category;
-    private CategoryDto categoryDto;
 
     @BeforeEach
     public void setup() {
-        locationSaved = Location.builder()
+        Location locationSaved = Location.builder()
                 .id(1L)
                 .lat(22.22f)
                 .lon(33.33f)
                 .build();
-        locationToSave = Location.builder()
-                .lat(22.22f)
-                .lon(33.33f)
-                .build();
-        locationDto = LocationDto.builder()
+        LocationDto locationDto = LocationDto.builder()
                 .lat(locationSaved.getLat())
                 .lon(locationSaved.getLon())
                 .build();
-        category = Category.builder()
+        Category category = Category.builder()
                 .id(1L)
                 .name("category")
                 .build();
-        categoryDto = CategoryDto.builder()
+        CategoryDto categoryDto = CategoryDto.builder()
                 .id(category.getId())
                 .name(category.getName())
                 .build();
@@ -108,9 +97,6 @@ public class AdminEventServiceTest {
         eventFullDto1Updated = EventFullDto.builder()
                 .id(event1.getId())
                 .build();
-        eventFullDto2Updated = EventFullDto.builder()
-                .id(event2.getId())
-                .build();
         eventQueryParams = EventQueryParams.builder()
                 .from(0)
                 .size(10)
@@ -131,39 +117,22 @@ public class AdminEventServiceTest {
         eventFullDto1ToUpdate = EventFullDto.builder()
                 .id(event1.getId())
                 .title(adminRequestToPublish.getTitle())
-                .state(EventState.PUBLISHED)
+                .state(EventState.CANCELED)
                 .location(locationDto)
                 .category(categoryDto)
                 .build();
-        eventFullDto2ToUpdate = EventFullDto.builder()
-                .id(event2.getId())
-                .title(adminRequestToCancel.getTitle())
-                .state(EventState.CANCELED)
-                .build();
         eventFullDto1Updated = EventFullDto.builder()
                 .id(event1.getId())
-                .title(adminRequestToPublish.getTitle())
-                .state(EventState.PUBLISHED)
+                .title(adminRequestToCancel.getTitle())
+                .state(EventState.CANCELED)
                 .views(1)
                 .confirmedRequests(1)
                 .location(locationDto)
                 .category(categoryDto)
                 .build();
-        eventFullDto2Updated = EventFullDto.builder()
-                .id(event2.getId())
-                .views(2)
-                .confirmedRequests(0)
-                .title(adminRequestToCancel.getTitle())
-                .state(EventState.CANCELED)
-                .build();
         event1Updated = Event.builder()
                 .id(1L)
-                .title(adminRequestToPublish.getTitle())
-                .state(EventState.PUBLISHED)
-                .build();
-        event2Updated = Event.builder()
-                .id(2L)
-                .title(adminRequestToPublish.getTitle())
+                .title(adminRequestToCancel.getTitle())
                 .state(EventState.CANCELED)
                 .build();
     }
@@ -193,67 +162,42 @@ public class AdminEventServiceTest {
         List<Long> eventIds = List.of();
         when(eventRepository.findAll(any(Specification.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of()));
-        when(eventUtilService.getHitsByEvent(eventIds)).thenReturn(new HashMap<>());
-        when(eventUtilService.getConfirmedRequestCountById(eventIds)).thenReturn(new HashMap<>());
-
         List<EventFullDto> actualListOfEventFullDto = eventService.getAll(eventQueryParams);
 
         assertThat(List.of(), is(actualListOfEventFullDto));
         verify(eventRepository, times(1))
                 .findAll(any(Specification.class), any(PageRequest.class));
-        verify(eventUtilService, times(1)).getHitsByEvent(eventIds);
-        verify(eventUtilService, times(1)).getConfirmedRequestCountById(eventIds);
+        verify(eventUtilService, never()).getHitsByEvent(eventIds);
+        verify(eventUtilService, never()).getConfirmedRequestCountById(eventIds);
         verify(eventMapper, never()).convertEventToFullDto(any(Event.class));
     }
 
     @Test
-    public void patch_whenSuccessfulPublishRequest_thenReturnUpdatedEventFullDto() {
+    public void patch_whenSuccessfulRejectRequest_thenReturnUpdatedEventFullDto() {
         when(eventRepository.findById(event1.getId())).thenReturn(Optional.of(event1));
+        when(eventRepository.save(event1Updated)).thenReturn(event1Updated);
         when(eventMapper.convertEventToFullDto(event1Updated)).thenReturn(eventFullDto1ToUpdate);
-        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
-        when(locationRepository.save(locationToSave)).thenReturn(locationSaved);
         when(eventUtilService.getHitsByEvent(List.of(event1.getId()))).thenReturn(hitsByEvent);
-        when(eventUtilService.getConfirmedRequestCountById(List.of(event1.getId()))).thenReturn(confirmedRequestCount);
+        when(eventUtilService.getConfirmedRequestCountById(List.of(event1.getId())))
+                .thenReturn(confirmedRequestCount);
 
-        EventFullDto actualEventFullDto = eventService.patch(event1.getId(), adminRequestToPublish);
+        EventFullDto actualEventFullDto = eventService.patch(event1.getId(), adminRequestToCancel);
 
         assertThat(eventFullDto1Updated, is(actualEventFullDto));
-        assertThat(adminRequestToPublish.getTitle(), is(actualEventFullDto.getTitle()));
-        assertThat(actualEventFullDto.getState(), is(EventState.PUBLISHED));
+        assertThat(adminRequestToCancel.getTitle(), is(actualEventFullDto.getTitle()));
+        assertThat(actualEventFullDto.getState(), is(EventState.CANCELED));
         verify(eventRepository, times(1)).findById(event1.getId());
         verify(eventMapper, times(1)).convertEventToFullDto(event1Updated);
-        verify(categoryRepository, times(1)).findById(category.getId());
-        verify(locationRepository, times(1)).save(locationToSave);
         verify(eventUtilService, times(1)).getHitsByEvent(List.of(event1.getId()));
         verify(eventUtilService, times(1))
                 .getConfirmedRequestCountById(List.of(event1.getId()));
     }
 
     @Test
-    public void patch_whenSuccessfulRejectRequest_thenReturnUpdatedEventFullDto() {
-        when(eventRepository.findById(event2.getId())).thenReturn(Optional.of(event2));
-        when(eventMapper.convertEventToFullDto(event2Updated)).thenReturn(eventFullDto2ToUpdate);
-        when(eventUtilService.getHitsByEvent(List.of(event2.getId()))).thenReturn(hitsByEvent);
-        when(eventUtilService.getConfirmedRequestCountById(List.of(event2.getId())))
-                .thenReturn(confirmedRequestCount);
-
-        EventFullDto actualEventFullDto = eventService.patch(event2.getId(), adminRequestToCancel);
-
-        assertThat(eventFullDto2Updated, is(actualEventFullDto));
-        assertThat(adminRequestToCancel.getTitle(), is(actualEventFullDto.getTitle()));
-        assertThat(actualEventFullDto.getState(), is(EventState.CANCELED));
-        verify(eventRepository, times(1)).findById(event2.getId());
-        verify(eventMapper, times(1)).convertEventToFullDto(event2Updated);
-        verify(eventUtilService, times(1)).getHitsByEvent(List.of(event2.getId()));
-        verify(eventUtilService, times(1))
-                .getConfirmedRequestCountById(List.of(event2.getId()));
-    }
-
-    @Test
     public void patch_whenPublishEventWithWrongState_thenThrownException() {
         when(eventRepository.findById(event2.getId())).thenReturn(Optional.of(event2));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        ConflictException exception = assertThrows(ConflictException.class,
                 () -> eventService.patch(event2.getId(), adminRequestToPublish));
         assertThat(exception.getMessage(),
                 is("Cannot publish the event because it's not in the right state: " + event2.getState()));
@@ -266,16 +210,16 @@ public class AdminEventServiceTest {
 
     @Test
     public void patch_whenCancelEventWithWrongState_thenThrownException() {
-        when(eventRepository.findById(event1.getId())).thenReturn(Optional.of(event1));
+        when(eventRepository.findById(event2.getId())).thenReturn(Optional.of(event2));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> eventService.patch(event1.getId(), adminRequestToCancel));
+        ConflictException exception = assertThrows(ConflictException.class,
+                () -> eventService.patch(event2.getId(), adminRequestToCancel));
         assertThat(exception.getMessage(),
-                is("Cannot cancel the event because it's not in the right state: " + event1.getState()));
-        verify(eventRepository, times(1)).findById(event1.getId());
+                is("Cannot cancel the event because it's not in the right state: " + event2.getState()));
+        verify(eventRepository, times(1)).findById(event2.getId());
         verify(eventMapper, never()).convertEventToFullDto(any(Event.class));
-        verify(eventUtilService, never()).getHitsByEvent(List.of(event1.getId()));
+        verify(eventUtilService, never()).getHitsByEvent(List.of(event2.getId()));
         verify(eventUtilService, never())
-                .getConfirmedRequestCountById(List.of(event1.getId()));
+                .getConfirmedRequestCountById(List.of(event2.getId()));
     }
 }

@@ -59,18 +59,21 @@ public class PublicCompilationServiceImpl implements PublicCompilationService {
                     .map(entry -> entry.getEvent().getId())
                     .collect(Collectors.toList());
 
-            Map<Long, Integer> hitByEventId = eventUtilService.getHitsByEvent(eventIds);
+            if (!eventIds.isEmpty()) {
+                Map<Long, Integer> hitByEventId = eventUtilService.getHitsByEvent(eventIds);
 
-            Map<Long, Long> confirmedRequestCountByEventId = eventUtilService.getConfirmedRequestCountById(eventIds);
+                Map<Long, Long> confirmedRequestCountByEventId = eventUtilService
+                        .getConfirmedRequestCountById(eventIds);
 
-            for (CompilationDto compilationDto : result) {
-                List<Event> eventsOfCompilation = eventCompilations.stream()
-                        .filter(entry -> Objects.equals(entry.getCompilation().getId(), compilationDto.getId()))
-                        .map(EventCompilation::getEvent)
-                        .collect(Collectors.toList());
-                List<EventShortDto> eventShortDtos = createEventShortDtos(eventsOfCompilation,
-                        hitByEventId, confirmedRequestCountByEventId);
-                compilationDto.setEvents(eventShortDtos);
+                for (CompilationDto compilationDto : result) {
+                    List<Event> eventsOfCompilation = eventCompilations.stream()
+                            .filter(entry -> Objects.equals(entry.getCompilation().getId(), compilationDto.getId()))
+                            .map(EventCompilation::getEvent)
+                            .collect(Collectors.toList());
+                    List<EventShortDto> eventShortDtos = createEventShortDtos(eventsOfCompilation,
+                            hitByEventId, confirmedRequestCountByEventId);
+                    compilationDto.setEvents(eventShortDtos);
+                }
             }
         }
 
@@ -85,21 +88,23 @@ public class PublicCompilationServiceImpl implements PublicCompilationService {
 
         List<EventCompilation> eventCompilations = eventCompilationRepository
                 .findAllByCompilationId(compId);
-        List<Long> eventIds = eventCompilations.stream()
-                .map(entry -> entry.getEvent().getId())
-                .collect(Collectors.toList());
-        List<Event> events = eventCompilations.stream()
-                .map(EventCompilation::getEvent)
-                .collect(Collectors.toList());
+        if (!eventCompilations.isEmpty()) {
+            List<Long> eventIds = eventCompilations.stream()
+                    .map(entry -> entry.getEvent().getId())
+                    .collect(Collectors.toList());
+            List<Event> events = eventCompilations.stream()
+                    .map(EventCompilation::getEvent)
+                    .collect(Collectors.toList());
 
-        Map<Long, Integer> hitByEventId = eventUtilService.getHitsByEvent(eventIds);
+            Map<Long, Integer> hitByEventId = eventUtilService.getHitsByEvent(eventIds);
 
-        Map<Long, Long> confirmedRequestCountByEventId = eventUtilService.getConfirmedRequestCountById(eventIds);
+            Map<Long, Long> confirmedRequestCountByEventId = eventUtilService.getConfirmedRequestCountById(eventIds);
 
-        List<EventShortDto> eventShortDtos = createEventShortDtos(events,
-                hitByEventId,confirmedRequestCountByEventId);
+            List<EventShortDto> eventShortDtos = createEventShortDtos(events,
+                    hitByEventId, confirmedRequestCountByEventId);
 
-        result.setEvents(eventShortDtos);
+            result.setEvents(eventShortDtos);
+        }
 
         return result;
     }

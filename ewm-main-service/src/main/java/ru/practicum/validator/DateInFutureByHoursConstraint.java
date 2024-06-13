@@ -7,12 +7,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.TYPE})
+@Target({ ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = DateComparisonValidator.class)
-public @interface DateComparisonConstraint {
-    String message() default "Range end date must be after range start date";
+@Constraint(validatedBy = DateInFutureByHoursValidator.class)
+public @interface DateInFutureByHoursConstraint {
+    String message() default "Event date must be after publication date";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
+    int hoursCount();
 }
 

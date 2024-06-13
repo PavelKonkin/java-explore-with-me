@@ -8,6 +8,7 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -83,6 +84,18 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleNumberFormatException(MethodArgumentTypeMismatchException ex) {
         log.info("Неверный формат аргумента {}", ex.getMessage());
+        List<String> errors = getStackTrace(ex);
+        return new ApiError(errors,
+                ex.getMessage(),
+                "Incorrectly made request.",
+                HttpStatus.BAD_REQUEST.name(),
+                LocalDateTime.now());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleMissingPathVariable(MissingServletRequestParameterException ex) {
+        log.info("Отсутсвует обязательный параметр запроса {}", ex.getMessage());
         List<String> errors = getStackTrace(ex);
         return new ApiError(errors,
                 ex.getMessage(),

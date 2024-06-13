@@ -41,7 +41,7 @@ public class AdminCompilationController {
     }
 
     @PatchMapping("/{compId}")
-    public CompilationDto patch(@RequestBody UpdateCompilationRequest updateCompilationRequest,
+    public CompilationDto patch(@Valid @RequestBody UpdateCompilationRequest updateCompilationRequest,
                                 @PathVariable long compId) {
         log.info("Получен запрос на обновление подборки событий с id {}, данные для обновления {}",
                 compId, updateCompilationRequest);

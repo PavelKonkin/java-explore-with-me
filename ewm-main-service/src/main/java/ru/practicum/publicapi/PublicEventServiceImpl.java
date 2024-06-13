@@ -82,11 +82,8 @@ public class PublicEventServiceImpl implements PublicEventService {
 
     @Override
     public EventFullDto get(long eventId, String remoteAddr, String requestURI) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
-        if (!EventState.PUBLISHED.equals(event.getState())) {
-            throw new IllegalArgumentException("Event must be published");
-        }
 
         EventFullDto result = eventMapper.convertEventToFullDto(event);
 
@@ -109,14 +106,17 @@ public class PublicEventServiceImpl implements PublicEventService {
         List<Long> eventIds = events.stream()
                 .map(Event::getId)
                 .collect(Collectors.toList());
-        Map<Long, Integer> hitsById = eventUtilService.getHitsByEvent(eventIds);
-        Map<Long, Long> confirmedRequestCount = eventUtilService.getConfirmedRequestCountById(eventIds);
         List<EventShortDto> result = events.stream()
                 .map(eventMapper::convertEventToShortDto)
                 .collect(Collectors.toList());
-        for (EventShortDto el : result) {
-            el.setViews(hitsById.getOrDefault(el.getId(), 0));
-            el.setConfirmedRequests(confirmedRequestCount.getOrDefault(el.getId(), 0L));
+        if (!result.isEmpty()) {
+            Map<Long, Integer> hitsById = eventUtilService.getHitsByEvent(eventIds);
+            Map<Long, Long> confirmedRequestCount = eventUtilService.getConfirmedRequestCountById(eventIds);
+
+            for (EventShortDto el : result) {
+                el.setViews(hitsById.getOrDefault(el.getId(), 0));
+                el.setConfirmedRequests(confirmedRequestCount.getOrDefault(el.getId(), 0L));
+            }
         }
         return result;
     }
