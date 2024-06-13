@@ -46,7 +46,7 @@ public class PrivateEventTest {
 
     private final Sort sort = Sort.by("createdOn").descending();
     private final Pageable page = new OffsetPage(0, 10, sort);
-    private final long wrongId = 66L;
+    private final long wrongId = Long.MAX_VALUE;
     private User user;
     private User user2;
     private Category category;
