@@ -17,7 +17,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -121,12 +121,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleException(Throwable ex) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        ex.printStackTrace(pw);
-        String stackTrace = sw.toString();
-        log.error(stackTrace, ex);
         List<String> errors = getStackTrace(ex);
+        log.error(errors.get(0), ex);
+
         return new ApiError(errors,
                 ex.getMessage(),
                 "The required object was not found.",
@@ -135,13 +132,11 @@ public class GlobalExceptionHandler {
     }
 
     private List<String> getStackTrace(Throwable ex) {
-        List<String> errors = Arrays.stream(ex.getStackTrace())
-                .map(StackTraceElement::toString)
-                .collect(Collectors.toList());
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ex.printStackTrace(pw);
+        String stackTrace = sw.toString();
 
-        if (ex.getCause() != null) {
-            errors.add("Cause: " + ex.getCause().toString());
-        }
-        return errors;
+        return Collections.singletonList(stackTrace);
     }
 }

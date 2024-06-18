@@ -20,7 +20,7 @@ public class EventMapper {
         this.locationMapper = locationMapper;
     }
 
-    public EventShortDto convertEventToShortDto(Event event) {
+    public EventShortDto convertEventToShortDto(Event event, Integer views, Long confirmedRequests) {
         return EventShortDto.builder()
                 .paid(event.isPaid())
                 .title(event.getTitle())
@@ -29,10 +29,12 @@ public class EventMapper {
                 .category(categoryMapper.convertCategory(event.getCategory()))
                 .annotation(event.getAnnotation())
                 .initiator(userMapper.convertUserToShortDto(event.getInitiator()))
+                .views(views)
+                .confirmedRequests(confirmedRequests)
                 .build();
     }
 
-    public EventFullDto convertEventToFullDto(Event event) {
+    public EventFullDto convertEventToFullDto(Event event, Integer views, Long confirmedRequests) {
         return EventFullDto.builder()
                 .id(event.getId())
                 .eventDate(event.getEventDate())
@@ -48,6 +50,8 @@ public class EventMapper {
                 .participantLimit(event.getParticipantLimit())
                 .state(event.getState())
                 .requestModeration(event.isRequestModeration())
+                .views(views)
+                .confirmedRequests(confirmedRequests)
                 .build();
     }
 

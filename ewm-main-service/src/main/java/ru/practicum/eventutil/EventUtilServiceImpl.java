@@ -1,15 +1,13 @@
 package ru.practicum.eventutil;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import ru.practicum.ViewStatDto;
 import ru.practicum.client.StatClient;
 import ru.practicum.participationrequest.ParticipationRequest;
 import ru.practicum.participationrequest.ParticipationRequestRepository;
 import ru.practicum.participationrequest.ParticipationRequestStatus;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,42 +30,37 @@ public class EventUtilServiceImpl implements EventUtilService {
 
     @Override
     public Map<Long, Integer> getHitsByEvent(List<Long> eventIds) {
+        Map<Long, Integer> hitsByEvent = new HashMap<>();
+
+        if (eventIds == null || eventIds.isEmpty()) {
+            return hitsByEvent;
+        }
+
         List<String> uris = eventIds.stream()
                 .map(el -> EVENTS_URI + el)
                 .collect(Collectors.toList());
 
-        ArrayList<HashMap<String, Object>> arrayListResponse;
-        Map<Long, Integer> hitsByEvent = new HashMap<>();
+        List<ViewStatDto> response = statClient.getStat(EVENTS_START, EVENTS_END, uris, true);
 
-        ResponseEntity<Object> response;
-        try {
-            response = statClient.getStat(EVENTS_START, EVENTS_END, uris, true);
-        } catch (Throwable e) {
+
+        if (response.isEmpty()) {
             return hitsByEvent;
-        }
+        } else {
+            hitsByEvent = response.stream()
+                    .collect(Collectors.groupingBy(
+                            viewStat -> Long.parseLong(viewStat.getUri().split("/events/")[1]),
+                            Collectors.summingInt(viewStat -> viewStat.getHits().intValue())));
 
-        if (response.getStatusCode().is2xxSuccessful()) {
-            Object responseBody = response.getBody();
-            ObjectMapper objectMapper = new ObjectMapper();
-
-            if (responseBody instanceof List) {
-                try {
-                    arrayListResponse = objectMapper.convertValue(responseBody, ArrayList.class);
-                    for (HashMap<String, Object> map : arrayListResponse) {
-                        String uri = (String) map.get("uri");
-                        long key = Long.parseLong(uri.substring(uri.lastIndexOf("/") + 1));
-                        Integer hit = (Integer) map.get("hits");
-                        hitsByEvent.put(key, hitsByEvent.getOrDefault(key, 0) + hit);
-                    }
-                } catch (ClassCastException ignored) {
-                }
-            }
         }
         return hitsByEvent;
     }
 
     @Override
     public Map<Long, Long> getConfirmedRequestCountById(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
         List<ParticipationRequest> confirmedRequests = requestRepository
                 .findAllByEventIdInAndStatus(eventIds, ParticipationRequestStatus.CONFIRMED);
         return confirmedRequests.stream()

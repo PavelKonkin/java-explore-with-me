@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import ru.practicum.adminapi.AdminUserService;
+import ru.practicum.adminapi.UserService;
 import ru.practicum.page.OffsetPage;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
@@ -27,7 +27,7 @@ public class UserTest {
     @Autowired
     private UserMapper userMapper;
     @Autowired
-    private AdminUserService userService;
+    private UserService userService;
 
     private User user;
     private UserDto userDto;

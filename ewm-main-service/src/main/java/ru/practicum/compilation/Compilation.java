@@ -1,11 +1,29 @@
 package ru.practicum.compilation;
 
 import lombok.*;
+import ru.practicum.event.Event;
 
 import javax.persistence.*;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
+@NamedEntityGraph(
+        name = "compilation.event.initiator.location.category",
+        attributeNodes = {
+                @NamedAttributeNode(value = "events", subgraph = "events-subgraph")
+        },
+        subgraphs = {
+                @NamedSubgraph(
+                        name = "events-subgraph",
+                        attributeNodes = {
+                                @NamedAttributeNode("initiator"),
+                                @NamedAttributeNode("location"),
+                                @NamedAttributeNode("category")
+                        }
+                )
+        })
 @Table(name = "compilations")
 @Getter
 @Setter
@@ -20,6 +38,14 @@ public class Compilation {
     private Long id;
     private String title;
     private boolean pinned;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "event_compilation",
+            joinColumns = @JoinColumn(name = "compilation_id"),
+            inverseJoinColumns = @JoinColumn(name = "event_id")
+    )
+    @ToString.Exclude
+    private Set<Event> events = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {
