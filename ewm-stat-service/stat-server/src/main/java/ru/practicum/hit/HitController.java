@@ -6,6 +6,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ru.practicum.HitDto;
 import ru.practicum.ViewStatDto;
 
@@ -36,6 +37,9 @@ public class HitController {
                                       @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
                                       @RequestParam(required = false) List<String> uris,
                                       @RequestParam(required = false, defaultValue = "false") boolean unique) {
+        if (end.isBefore(start)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End of period must be before its start");
+        }
         log.info("Получен запрос на статистику с даты {} по дату {} для адресов {}, только уникальные ip - {}",
                 start, end, uris, unique);
         List<ViewStatDto> result = hitService.getStat(start, end, uris, unique);

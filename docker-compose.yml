@@ -8,9 +8,9 @@ services:
     ports:
       - "9090:9090"
     environment:
-          - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/stat
-          - SPRING_DATASOURCE_USERNAME=stat_user
-          - SPRING_DATASOURCE_PASSWORD=statpass
+      SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stat
+      SPRING_DATASOURCE_USERNAME: stat_user
+      SPRING_DATASOURCE_PASSWORD: statpass
 
   stats-db:
     image: postgres:14-alpine
@@ -32,8 +32,10 @@ services:
     depends_on:
       - ewm-db
     environment:
-      SPRING_ACTIVE_PROFILE: docker
-      STAT-SERVER_URL: http://stat-server:9090
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5432/ewm
+      SPRING_DATASOURCE_USERNAME: ewm_user
+      SPRING_DATASOURCE_PASSWORD: ewmpass
+      STAT_SERVER_URL: http://stat-server:9090
 
   ewm-db:
     image: postgres:14-alpine
