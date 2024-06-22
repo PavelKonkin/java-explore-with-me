@@ -80,3 +80,31 @@ CREATE TABLE IF NOT EXISTS participation_requests
     CONSTRAINT uq_request UNIQUE (event_id, requester_id),
     CONSTRAINT pk_participation_request PRIMARY KEY (participation_request_id)
 );
+
+CREATE TABLE IF NOT EXISTS event_user_like
+(
+    event_id BIGINT NOT NULL,
+    user_id  BIGINT NOT NULL,
+    CONSTRAINT event_user_like_pk
+        PRIMARY KEY (event_id, user_id),
+    CONSTRAINT event_user_like_event_id_fk
+        FOREIGN KEY (event_id) REFERENCES events (event_id)
+            ON DELETE CASCADE,
+    CONSTRAINT event_user_like_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users (user_id)
+            ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_user_dislike
+(
+    event_id BIGINT NOT NULL,
+    user_id  BIGINT NOT NULL,
+    CONSTRAINT event_user_dislike_pk
+        PRIMARY KEY (event_id, user_id),
+    CONSTRAINT event_user_dislike_event_id_fk
+        FOREIGN KEY (event_id) REFERENCES events (event_id)
+            ON DELETE CASCADE,
+    CONSTRAINT event_user_dislike_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users (user_id)
+            ON DELETE CASCADE
+);

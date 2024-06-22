@@ -31,4 +31,5 @@ public class EventFullDto {
     private int participantLimit;
     private LocationDto location;
     private EventState state;
+    private Long rating;
 }

@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class UserShortDto {
     private String name;
     private Long id;
+    private Long rating;
 }

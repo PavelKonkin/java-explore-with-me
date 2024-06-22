@@ -102,4 +102,23 @@ public class EventSpecification {
             return root.get("initiator").get("id").in(initiatorIds);
         };
     }
+
+    public static Specification<Event> hasInitiatorThatIsNotUser(long userId) {
+        return (root, query, builder) -> builder.notEqual(root.get("initiator").get("id"), userId);
+    }
+
+    public static Specification<Event> hasConfirmedRequest() {
+        return (root, query, builder) -> {
+
+            Join<Event, ParticipationRequest> requests = root.join("participationRequest", JoinType.INNER);
+            query.groupBy(root.get("id"));
+            query.having(builder.greaterThan(builder.count(requests.get("id")), 0L));
+
+            return builder.equal(requests.get("status"), ParticipationRequestStatus.CONFIRMED);
+        };
+    }
+
+    public static Specification<Event> hasEventId(long eventId) {
+        return (root, query, builder) -> builder.equal(root.get("id"), eventId);
+    }
 }

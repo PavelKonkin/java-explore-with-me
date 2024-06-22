@@ -1,9 +1,11 @@
 package ru.practicum.page;
 
+import lombok.Getter;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
 public class OffsetPage extends PageRequest {
+    @Getter
     private final int from;
     private final int size;
 
@@ -27,5 +29,6 @@ public class OffsetPage extends PageRequest {
     public long getOffset() {
         return from;
     }
+
 }
 
