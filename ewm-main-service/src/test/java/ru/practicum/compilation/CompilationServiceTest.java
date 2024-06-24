@@ -22,7 +22,6 @@ import ru.practicum.page.OffsetPage;
 import ru.practicum.participationrequest.ParticipationRequest;
 import ru.practicum.participationrequest.ParticipationRequestStatus;
 import ru.practicum.user.User;
-import ru.practicum.user.UserRatingService;
 import ru.practicum.user.dto.UserShortDto;
 
 import java.time.LocalDateTime;
@@ -46,7 +45,7 @@ public class CompilationServiceTest {
     @Mock
     private EventUtilService eventUtilService;
     @Mock
-    private UserRatingService userRatingService;
+    private RatingService ratingService;
     @InjectMocks
     private CompilationServiceImpl compilationService;
 
@@ -314,20 +313,23 @@ public class CompilationServiceTest {
     @Test
     public void add_whenSuccessful_thenReturnCompilationDto() {
         List<Long> eventIds = List.of(1L, 2L);
+        event1.setInitiator(initiator);
+        event2.setInitiator(initiator);
         when(compilationRepository.save(compilationToSave)).thenReturn(compilation);
         when(eventRepository.findAllByIdIn(eventIds)).thenReturn(List.of(event1, event2));
         when(eventUtilService.getHitsByEvent(eventIds))
                 .thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds))
                 .thenReturn(confirmedRequestCount);
-        when(userRatingService.getUsersRating(List.of(event1, event2))).thenReturn(new HashMap<>());
+        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
+        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
         when(eventMapper.convertEventToShortDto(event1, hitsByEvent.getOrDefault(event1.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1.getId(), 0L),
-                (long) (event1.getLikes().size() - event1.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto1);
         when(eventMapper.convertEventToShortDto(event2, hitsByEvent.getOrDefault(event2.getId(), 0),
                 confirmedRequestCount.getOrDefault(event2.getId(), 0L),
-                (long) (event2.getLikes().size() - event2.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto2);
         when(compilationMapper.convertCompilation(compilation,
                 List.of(eventShortDto1, eventShortDto2))).thenReturn(compilationDto);
@@ -342,7 +344,7 @@ public class CompilationServiceTest {
         verify(eventUtilService, times(1))
                 .getConfirmedRequestCountById(eventIds);
         verify(eventMapper, times(2))
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(compilationMapper, times(1))
                 .convertCompilation(any(Compilation.class), anyList());
     }
@@ -350,7 +352,6 @@ public class CompilationServiceTest {
     @Test
     public void add_whenCompilationWithoutEvents_thenReturnCompilationDtoWithoutEvents() {
         when(compilationRepository.save(compilationToSaveWithoutEvents)).thenReturn(compilationWithoutEvents);
-        when(userRatingService.getUsersRating(List.of())).thenReturn(new HashMap<>());
         when(compilationMapper.convertCompilation(compilationWithoutEvents, List.of()))
                 .thenReturn(compilationDtoWithoutEvents);
 
@@ -364,7 +365,7 @@ public class CompilationServiceTest {
         verify(eventUtilService, never())
                 .getConfirmedRequestCountById(anyList());
         verify(eventMapper, never())
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(compilationMapper, times(1))
                 .convertCompilation(any(Compilation.class), anyList());
     }
@@ -403,12 +404,12 @@ public class CompilationServiceTest {
                 .thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds))
                 .thenReturn(confirmedRequestCount);
-        when(userRatingService.getUsersRating(List.of(event3))).thenReturn(new HashMap<>());
+        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
         when(eventMapper.convertEventToShortDto(event3,
                 hitsByEvent.getOrDefault(event3.getId(), 0),
                 confirmedRequestCount.getOrDefault(event3.getId(), 0L),
-                (long) (event3.getLikes().size() - event3.getDislikes().size()),
-                new HashMap<>()))
+                0L,
+                0L))
                 .thenReturn(eventShortDto3);
         when(compilationMapper.convertCompilation(updatedCompilation, List.of(eventShortDto3)))
                 .thenReturn(updatedCompilationDto);
@@ -425,7 +426,7 @@ public class CompilationServiceTest {
         verify(eventUtilService, times(1))
                 .getConfirmedRequestCountById(eventIds);
         verify(eventMapper, times(1))
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(compilationMapper, times(1))
                 .convertCompilation(any(Compilation.class), anyList());
     }
@@ -447,13 +448,15 @@ public class CompilationServiceTest {
         verify(eventUtilService, never())
                 .getConfirmedRequestCountById(List.of(wrongId));
         verify(eventMapper, never())
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(compilationMapper, never()).convertCompilation(any(Compilation.class), anyList());
     }
 
 
     @Test
     public void pub_getAll_whenSuccessful_thenReturnCompilationDto() {
+        event1Pub.setInitiator(initiator);
+        event2Pub.setInitiator(initiator);
         when(compilationRepository.findAllByPinned(false, page))
                 .thenReturn(List.of(compilation1Pub, compilation2Pub));
         when(compilationMapper.convertCompilation(compilation1Pub, List.of(eventShortDto1Pub)))
@@ -468,19 +471,17 @@ public class CompilationServiceTest {
                 .thenReturn(confirmedRequestCount);
         when(eventUtilService.getConfirmedRequestCountById(List.of(event2Pub.getId())))
                 .thenReturn(confirmedRequestCount);
-        when(userRatingService.getUsersRating(List.of(event1Pub))).thenReturn(new HashMap<>());
-        when(userRatingService.getUsersRating(List.of(event2Pub))).thenReturn(new HashMap<>());
+        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(ratingService.getEventsRating(List.of(1L))).thenReturn(new HashMap<>());
         when(eventMapper.convertEventToShortDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
-                (long) (event1Pub.getLikes().size() - event1Pub.getDislikes().size()),
-                new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto1Pub);
         when(eventMapper.convertEventToShortDto(event2Pub,
                 hitsByEvent.getOrDefault(event2Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event2Pub.getId(), 0L),
-                (long) (event1Pub.getLikes().size() - event1Pub.getDislikes().size()),
-                new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto2Pub);
 
         List<CompilationDto> actualListOfCompilationDto = compilationService.getAll(false, page);
@@ -494,7 +495,7 @@ public class CompilationServiceTest {
         verify(eventUtilService, times(2))
                 .getConfirmedRequestCountById(anyList());
         verify(eventMapper, times(2))
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 
     @Test
@@ -513,11 +514,12 @@ public class CompilationServiceTest {
         verify(eventUtilService, never())
                 .getConfirmedRequestCountById(eventIds);
         verify(eventMapper, never())
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 
     @Test
     public void pub_get_whenSuccessful_thenReturnCompilationDto() {
+        event1Pub.setInitiator(initiator);
         when(compilationRepository.findById(compilation1Pub.getId()))
                 .thenReturn(Optional.of(compilation1Pub));
         when(compilationMapper.convertCompilation(compilation1Pub, List.of(eventShortDto1Pub)))
@@ -526,11 +528,12 @@ public class CompilationServiceTest {
                 .thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(List.of(event1Pub.getId())))
                 .thenReturn(confirmedRequestCount);
-        when(userRatingService.getUsersRating(List.of(event1Pub))).thenReturn(new HashMap<>());
+        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(ratingService.getEventsRating(List.of(1L))).thenReturn(new HashMap<>());
         when(eventMapper.convertEventToShortDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
-                (long) (event1Pub.getLikes().size() - event1Pub.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto1Pub);
 
         CompilationDto actuaCompilationDto = compilationService.get(compilation1Pub.getId());
@@ -544,7 +547,7 @@ public class CompilationServiceTest {
         verify(eventUtilService, times(1))
                 .getConfirmedRequestCountById(List.of(event1Pub.getId()));
         verify(eventMapper, times(1))
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 
     @Test
@@ -561,6 +564,6 @@ public class CompilationServiceTest {
         verify(eventUtilService, never())
                 .getConfirmedRequestCountById(List.of(wrongId));
         verify(eventMapper, never())
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 }

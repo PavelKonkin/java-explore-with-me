@@ -7,8 +7,6 @@ import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.user.UserMapper;
 
-import java.util.Map;
-
 @Component
 public class EventMapper {
     private final CategoryMapper categoryMapper;
@@ -26,7 +24,7 @@ public class EventMapper {
                                                 Integer views,
                                                 Long confirmedRequests,
                                                 Long rating,
-                                                Map<Long, Long> userRating) {
+                                                Long userRating) {
         return EventShortDto.builder()
                 .paid(event.isPaid())
                 .title(event.getTitle())
@@ -34,8 +32,7 @@ public class EventMapper {
                 .id(event.getId())
                 .category(categoryMapper.convertCategory(event.getCategory()))
                 .annotation(event.getAnnotation())
-                .initiator(userMapper.convertUserToShortDto(event.getInitiator(),
-                        userRating.getOrDefault(event.getInitiator().getId(), 0L)))
+                .initiator(userMapper.convertUserToShortDto(event.getInitiator(), userRating))
                 .views(views)
                 .confirmedRequests(confirmedRequests)
                 .rating(rating)
@@ -46,7 +43,7 @@ public class EventMapper {
                                               Integer views,
                                               Long confirmedRequests,
                                               Long rating,
-                                              Map<Long, Long> userRating) {
+                                              Long userRating) {
         return EventFullDto.builder()
                 .id(event.getId())
                 .eventDate(event.getEventDate())
@@ -54,7 +51,7 @@ public class EventMapper {
                 .title(event.getTitle())
                 .description(event.getDescription())
                 .initiator(userMapper.convertUserToShortDto(event.getInitiator(),
-                        userRating.getOrDefault(event.getInitiator().getId(), 0L)))
+                                userRating))
                 .category(categoryMapper.convertCategory(event.getCategory()))
                 .createdOn(event.getCreatedOn())
                 .publishedOn(event.getPublishedOn())

@@ -6,15 +6,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import ru.practicum.event.RatingService;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.page.OffsetPage;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 
-import org.springframework.data.domain.Pageable;
-
-import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +30,8 @@ public class UserServiceTest {
     private UserRepository userRepository;
     @Mock
     private UserMapper userMapper;
+    @Mock
+    private RatingService ratingService;
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -116,30 +118,26 @@ public class UserServiceTest {
 
     @Test
     void getAll_whenThereAreUsers_thenReturnListOfUserDtos() {
-        List<Object[]> users = List.of(
-                new Object[]{BigInteger.valueOf(userDto1.getId()), userDto1.getName(),
-                        userDto1.getEmail(), BigInteger.valueOf(userDto1.getRating())},
-                new Object[]{BigInteger.valueOf(userDto2.getId()), userDto2.getName(),
-                        userDto2.getEmail(), BigInteger.valueOf(userDto2.getRating())}
-        );
         List<UserDto> expectedUserDtos = List.of(userDto1, userDto2);
-        when(userRepository.findAllInIds(List.of(), 0, 10, 0L)).thenReturn(users);
+        when(userRepository.findAllInIds(List.of(), 0, page)).thenReturn(expectedUserDtos);
+        when(ratingService.getUsersRating(List.of(userDto1.getId(), userDto2.getId()))).thenReturn(new HashMap<>());
 
 
         List<UserDto> actualUserDtos = userService.getAll(null, page);
 
         assertThat(actualUserDtos, is(expectedUserDtos));
-        verify(userRepository, times(1)).findAllInIds(List.of(), 0, 10, 0L);
+        verify(userRepository, times(1)).findAllInIds(List.of(), 0, page);
     }
 
     @Test
     void getAll_whenThereAreNoUsers_thenReturnEmptyList() {
         List<UserDto> expectedUserDtos = List.of();
-        when(userRepository.findAllInIds(List.of(), 0, 10, 0L)).thenReturn(List.of());
+        when(userRepository.findAllInIds(List.of(), 0, page)).thenReturn(List.of());
+
 
         List<UserDto> actualUserDtos = userService.getAll(null, page);
 
         assertThat(actualUserDtos, is(expectedUserDtos));
-        verify(userRepository, times(1)).findAllInIds(List.of(), 0, 10, 0L);
+        verify(userRepository, times(1)).findAllInIds(List.of(), 0, page);
     }
 }

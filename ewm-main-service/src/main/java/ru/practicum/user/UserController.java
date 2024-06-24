@@ -21,7 +21,7 @@ import java.util.List;
 @Validated
 public class UserController {
     private final UserService userService;
-    private final Sort sort = Sort.by("user_id").ascending();
+    private final Sort sort = Sort.by("id").ascending();
 
 
     @Autowired

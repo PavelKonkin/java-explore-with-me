@@ -37,7 +37,7 @@ public class UserControllerTest {
     private MockMvc mvc;
     private UserDto userDto;
     private NewUserRequest newUserRequest;
-    private final Sort sort = Sort.by("user_id").ascending();
+    private final Sort sort = Sort.by("id").ascending();
     private final Pageable page = new OffsetPage(0, 10, sort);
     private final Pageable wrongPage = new OffsetPage(-1, 10, sort);
 

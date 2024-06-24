@@ -25,7 +25,6 @@ import ru.practicum.participationrequest.ParticipationRequestRepository;
 import ru.practicum.participationrequest.ParticipationRequestStatus;
 import ru.practicum.participationrequest.dto.ParticipationRequestDto;
 import ru.practicum.user.User;
-import ru.practicum.user.UserRatingService;
 import ru.practicum.user.UserRepository;
 import ru.practicum.user.dto.UserShortDto;
 
@@ -58,7 +57,7 @@ public class EventServiceTest {
     @Mock
     private StatClient statClient;
     @Mock
-    private UserRatingService userRatingService;
+    private RatingService ratingService;
     @InjectMocks
     private EventServiceImpl eventService;
 
@@ -176,6 +175,7 @@ public class EventServiceTest {
                 .build();
         event2 = Event.builder()
                 .id(2L)
+                .initiator(user)
                 .participantLimit(2)
                 .build();
         eventShortDto1 = EventShortDto.builder()
@@ -268,6 +268,7 @@ public class EventServiceTest {
         event1Adm = Event.builder()
                 .id(1L)
                 .title("test")
+                .initiator(user)
                 .state(EventState.PENDING)
                 .build();
         event2Adm = Event.builder()
@@ -317,6 +318,7 @@ public class EventServiceTest {
                 .id(1L)
                 .title(adminRequestToCancel.getTitle())
                 .state(EventState.CANCELED)
+                .initiator(user)
                 .build();
 
 
@@ -356,16 +358,17 @@ public class EventServiceTest {
         List<Long> eventIds = List.of(event1.getId(), event2.getId());
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(eventRepository.findAllByInitiatorId(user.getId(), page)).thenReturn(List.of(event1, event2));
-        when(userRatingService.getUsersRating(List.of(event1, event2))).thenReturn(new HashMap<>());
+        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
         when(eventMapper.convertEventToShortDto(event1,
                 hitsByEvent.getOrDefault(event1.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1.getId(), 0L),
-                (long) (event1.getLikes().size() - event1.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto1);
         when(eventMapper.convertEventToShortDto(event2,
                 hitsByEvent.getOrDefault(event2.getId(), 0),
                 confirmedRequestCount.getOrDefault(event2.getId(), 0L),
-                (long) (event2.getLikes().size() - event2.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto2);
         when(eventUtilService.getHitsByEvent(eventIds)).thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds)).thenReturn(confirmedRequestCount);
@@ -376,7 +379,7 @@ public class EventServiceTest {
         verify(userRepository, times(1)).findById(user.getId());
         verify(eventRepository, times(1)).findAllByInitiatorId(user.getId(), page);
         verify(eventMapper, times(2))
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, times(1)).getHitsByEvent(eventIds);
         verify(eventUtilService, times(1)).getConfirmedRequestCountById(eventIds);
     }
@@ -392,7 +395,7 @@ public class EventServiceTest {
         verify(userRepository, times(1)).findById(user.getId());
         verify(eventRepository, times(1)).findAllByInitiatorId(user.getId(), page);
         verify(eventMapper, never())
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(any());
         verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
     }
@@ -407,7 +410,7 @@ public class EventServiceTest {
         verify(userRepository, times(1)).findById(wrongId);
         verify(eventRepository, never()).findAllByInitiatorId(wrongId, page);
         verify(eventMapper, never())
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(any());
         verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
     }
@@ -419,7 +422,7 @@ public class EventServiceTest {
         when(locationRepository.save(locationToSave)).thenReturn(location);
         when(eventRepository.save(event1ToSave)).thenReturn(event1);
         when(eventMapper.convertEventToFullDto(event1, 0, 0L,
-                (long) (event1.getLikes().size() - event1.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventFullDto1);
 
         EventFullDto actualEventFullDto = eventService.add(user.getId(), newEventDto);
@@ -430,7 +433,7 @@ public class EventServiceTest {
         verify(locationRepository, times(1)).save(locationToSave);
         verify(eventRepository, times(1)).save(event1ToSave);
         verify(eventMapper, times(1)).convertEventToFullDto(event1,0, 0L,
-                (long) (event1.getLikes().size() - event1.getDislikes().size()), new HashMap<>());
+                0L, 0L);
     }
 
     @Test
@@ -445,7 +448,7 @@ public class EventServiceTest {
         verify(locationRepository, never()).save(any(Location.class));
         verify(eventRepository, never()).save(any(Event.class));
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 
     @Test
@@ -463,7 +466,7 @@ public class EventServiceTest {
         verify(locationRepository, never()).save(any(Location.class));
         verify(eventRepository, never()).save(any(Event.class));
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 
     @Test
@@ -471,11 +474,11 @@ public class EventServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
-        when(userRatingService.getUserRating(event1)).thenReturn(new HashMap<>());
+        when(ratingService.getUserRating(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1,
                 hitsByEvent.getOrDefault(event1.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1.getId(), 0L),
-                (long) (event1.getLikes().size() - event1.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventFullDtoPopulated);
         when(eventUtilService.getHitsByEvent(List.of(event1.getId()))).thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(List.of(event1.getId())))
@@ -490,7 +493,7 @@ public class EventServiceTest {
         verify(eventMapper, times(1)).convertEventToFullDto(event1,
                 hitsByEvent.getOrDefault(event1.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1.getId(), 0L),
-                (long) (event1.getLikes().size() - event1.getDislikes().size()), new HashMap<>());
+                0L, 0L);
         verify(eventUtilService, times(1)).getHitsByEvent(List.of(event1.getId()));
         verify(eventUtilService, times(1))
                 .getConfirmedRequestCountById(List.of(event1.getId()));
@@ -506,7 +509,7 @@ public class EventServiceTest {
         verify(userRepository, times(1)).findById(wrongId);
         verify(eventRepository, never()).findByIdAndInitiatorId(event1.getId(), wrongId);
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(anyList());
         verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
     }
@@ -524,7 +527,7 @@ public class EventServiceTest {
         verify(userRepository, times(1)).findById(user.getId());
         verify(eventRepository, times(1)).findByIdAndInitiatorId(wrongId, user.getId());
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(anyList());
         verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
     }
@@ -535,9 +538,9 @@ public class EventServiceTest {
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
         when(eventRepository.save(event1Updated)).thenReturn(event1Updated);
-        when(userRatingService.getUserRating(event1Updated)).thenReturn(new HashMap<>());
+        when(ratingService.getUserRating(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1Updated,0, 0L,
-                (long) (event1Updated.getLikes().size() - event1Updated.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventFullDtoUpdated1);
 
         EventFullDto actualEventFullDto = eventService.update(user.getId(), event1.getId(), updateRequest);
@@ -548,7 +551,7 @@ public class EventServiceTest {
                 .findByIdAndInitiatorId(event1.getId(), user.getId());
         verify(eventRepository, times(1)).save(event1Updated);
         verify(eventMapper, times(1)).convertEventToFullDto(event1Updated,0, 0L,
-                (long) (event1Updated.getLikes().size() - event1Updated.getDislikes().size()), new HashMap<>());
+                0L, 0L);
     }
 
     @Test
@@ -562,7 +565,7 @@ public class EventServiceTest {
         verify(eventRepository, never()).findByIdAndInitiatorId(event1.getId(), wrongId);
         verify(eventRepository, never()).save(any(Event.class));
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(anyList());
         verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
     }
@@ -581,7 +584,7 @@ public class EventServiceTest {
         verify(eventRepository, times(1)).findByIdAndInitiatorId(wrongId, user.getId());
         verify(eventRepository, never()).save(any(Event.class));
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(anyList());
         verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
     }
@@ -602,7 +605,7 @@ public class EventServiceTest {
                 .findByIdAndInitiatorId(event1.getId(), user.getId());
         verify(eventRepository, never()).save(any(Event.class));
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(anyList());
         verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
     }
@@ -619,9 +622,9 @@ public class EventServiceTest {
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
         when(eventRepository.save(event1Updated)).thenReturn(event1Updated);
-        when(userRatingService.getUserRating(event1Updated)).thenReturn(new HashMap<>());
+        when(ratingService.getUserRating(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1Updated,0, 0L,
-                (long) (event1Updated.getLikes().size() - event1Updated.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventFullDtoUpdated1);
 
         EventFullDto actualEventFullDto = eventService.update(user.getId(), event1.getId(), updateRequest);
@@ -632,7 +635,7 @@ public class EventServiceTest {
                 .findByIdAndInitiatorId(event1.getId(), user.getId());
         verify(eventRepository, times(1)).save(event1Updated);
         verify(eventMapper, times(1)).convertEventToFullDto(event1Updated,0, 0L,
-                (long) (event1Updated.getLikes().size() - event1Updated.getDislikes().size()), new HashMap<>());
+                0L, 0L);
     }
 
     @Test
@@ -646,9 +649,9 @@ public class EventServiceTest {
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
         when(eventRepository.save(event1Updated)).thenReturn(event1Updated);
-        when(userRatingService.getUserRating(event1Updated)).thenReturn(new HashMap<>());
+        when(ratingService.getUserRating(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1Updated, 0,0L,
-                (long) (event1Updated.getLikes().size() - event1Updated.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventFullDtoUpdated1);
 
         EventFullDto actualEventFullDto = eventService.update(user.getId(), event1.getId(), updateRequest);
@@ -659,7 +662,7 @@ public class EventServiceTest {
                 .findByIdAndInitiatorId(event1.getId(), user.getId());
         verify(eventRepository, times(1)).save(event1Updated);
         verify(eventMapper, times(1)).convertEventToFullDto(event1Updated, 0, 0L,
-                (long) (event1Updated.getLikes().size() - event1Updated.getDislikes().size()), new HashMap<>());
+                0L, 0L);
     }
 
     @Test
@@ -681,7 +684,7 @@ public class EventServiceTest {
         verify(categoryRepository, times(1)).findById(wrongId);
         verify(eventRepository, never()).save(any(Event.class));
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(anyList());
         verify(eventUtilService, never()).getConfirmedRequestCountById(anyList());
     }
@@ -926,19 +929,22 @@ public class EventServiceTest {
 
     @Test
     public void adm_getAll_whenSuccessful_thenReturnListOfEventFullDtos() {
+        event1Adm.setInitiator(user);
+        event2Adm.setInitiator(user);
         List<Long> eventIds = List.of(event1Adm.getId(), event2Adm.getId());
         when(eventRepository.findAll(any(Specification.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of(event1Adm, event2Adm)));
         when(eventUtilService.getHitsByEvent(eventIds)).thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds)).thenReturn(confirmedRequestCount);
-        when(userRatingService.getUsersRating(List.of(event1Adm, event2Adm))).thenReturn(new HashMap<>());
+        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
         when(eventMapper.convertEventToFullDto(event1Adm, hitsByEvent.getOrDefault(event1Adm.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Adm.getId(), 0L),
-                (long) (event1Adm.getLikes().size() - event1Adm.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventFullDto1Adm);
         when(eventMapper.convertEventToFullDto(event2Adm, hitsByEvent.getOrDefault(event2Adm.getId(), 0),
                 confirmedRequestCount.getOrDefault(event2Adm.getId(), 0L),
-                (long) (event2Adm.getLikes().size() - event2Adm.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventFullDto2Adm);
 
         List<EventFullDto> actualListOfEventFullDto = eventService.getAll(adminEventParams);
@@ -949,7 +955,7 @@ public class EventServiceTest {
         verify(eventUtilService, times(1)).getHitsByEvent(eventIds);
         verify(eventUtilService, times(1)).getConfirmedRequestCountById(eventIds);
         verify(eventMapper, times(2))
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 
     @Test
@@ -957,7 +963,7 @@ public class EventServiceTest {
         List<Long> eventIds = List.of();
         when(eventRepository.findAll(any(Specification.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of()));
-        when(userRatingService.getUsersRating(List.of())).thenReturn(new HashMap<>());
+        when(ratingService.getUsersRating(List.of())).thenReturn(new HashMap<>());
         List<EventFullDto> actualListOfEventFullDto = eventService.getAll(adminEventParams);
 
         assertThat(List.of(), is(actualListOfEventFullDto));
@@ -966,7 +972,7 @@ public class EventServiceTest {
         verify(eventUtilService, never()).getHitsByEvent(eventIds);
         verify(eventUtilService, never()).getConfirmedRequestCountById(eventIds);
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 
     @Test
@@ -976,9 +982,10 @@ public class EventServiceTest {
 
         when(eventRepository.findById(event1Adm.getId())).thenReturn(Optional.of(event1Adm));
         when(eventRepository.save(event1UpdatedAdm)).thenReturn(event1UpdatedAdm);
-        when(userRatingService.getUserRating(event1UpdatedAdm)).thenReturn(new HashMap<>());
+        when(ratingService.getEventRating(1L)).thenReturn(0L);
+        when(ratingService.getUserRating(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1UpdatedAdm,0, 0L,
-                (long) (event1UpdatedAdm.getLikes().size() - event1UpdatedAdm.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventFullDto1ToUpdateAdm);
 
         EventFullDto actualEventFullDto = eventService.patch(event1Adm.getId(), adminRequestToCancel);
@@ -988,7 +995,7 @@ public class EventServiceTest {
         assertThat(actualEventFullDto.getState(), is(EventState.CANCELED));
         verify(eventRepository, times(1)).findById(event1Adm.getId());
         verify(eventMapper, times(1)).convertEventToFullDto(event1UpdatedAdm,0, 0L,
-                (long) (event1UpdatedAdm.getLikes().size() - event1UpdatedAdm.getDislikes().size()), new HashMap<>());
+                0L, 0L);
     }
 
     @Test
@@ -1001,7 +1008,7 @@ public class EventServiceTest {
                 is("Cannot publish the event because it's not in the right state: " + event2Adm.getState()));
         verify(eventRepository, times(1)).findById(event2Adm.getId());
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(List.of(event2Adm.getId()));
         verify(eventUtilService, never())
                 .getConfirmedRequestCountById(List.of(event2Adm.getId()));
@@ -1017,7 +1024,7 @@ public class EventServiceTest {
                 is("Cannot cancel the event because it's not in the right state: " + event2Adm.getState()));
         verify(eventRepository, times(1)).findById(event2Adm.getId());
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(eventUtilService, never()).getHitsByEvent(List.of(event2Adm.getId()));
         verify(eventUtilService, never())
                 .getConfirmedRequestCountById(List.of(event2Adm.getId()));
@@ -1026,6 +1033,8 @@ public class EventServiceTest {
     @Test
     public void pub_getAll_whenSortByViews_thenReturnListOfEventShortDto() {
         List<Long> eventIds = List.of(event1Pub.getId(), event2Pub.getId());
+        event1Pub.setInitiator(user);
+        event2Pub.setInitiator(user);
         publicEventParams.setSort("VIEWS");
 
         doNothing().when(statClient)
@@ -1033,16 +1042,17 @@ public class EventServiceTest {
         when(eventRepository.findAll(any(Specification.class))).thenReturn(List.of(event1Pub, event2Pub));
         when(eventUtilService.getHitsByEvent(eventIds)).thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds)).thenReturn(confirmedRequestCount);
-        when(userRatingService.getUsersRating(List.of(event1Pub, event2Pub))).thenReturn(new HashMap<>());
+        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
         when(eventMapper.convertEventToShortDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
-                (long) (event1Pub.getLikes().size() - event1Pub.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto1Pub);
         when(eventMapper.convertEventToShortDto(event2Pub,
                 hitsByEvent.getOrDefault(event2Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event2Pub.getId(), 0L),
-                (long) (event2Pub.getLikes().size() - event2Pub.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto2Pub);
 
         List<EventShortDto> actualEventShortDtos = eventService.getAll(publicEventParams, uri, ipAddress);
@@ -1056,12 +1066,14 @@ public class EventServiceTest {
         verify(eventUtilService, times(1))
                 .getConfirmedRequestCountById(eventIds);
         verify(eventMapper, times(2))
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 
     @Test
     public void pub_getAll_whenSortByDate_thenReturnListOfEventShortDto() {
         List<Long> eventIds = List.of(event1Pub.getId(), event2Pub.getId());
+        event1Pub.setInitiator(user);
+        event2Pub.setInitiator(user);
 
         doNothing().when(statClient)
                 .hits(any(String.class), any(String.class), any(String.class), any(LocalDateTime.class));
@@ -1071,16 +1083,17 @@ public class EventServiceTest {
                 .thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds))
                 .thenReturn(confirmedRequestCount);
-        when(userRatingService.getUsersRating(List.of(event1Pub, event2Pub))).thenReturn(new HashMap<>());
+        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
         when(eventMapper.convertEventToShortDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
-                (long) (event1Pub.getLikes().size() - event1Pub.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto1Pub);
         when(eventMapper.convertEventToShortDto(event2Pub,
                 hitsByEvent.getOrDefault(event2Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event2Pub.getId(), 0L),
-                (long) (event2Pub.getLikes().size() - event2Pub.getDislikes().size()), new HashMap<>()))
+                0L, 0L))
                 .thenReturn(eventShortDto2Pub);
 
         List<EventShortDto> actualEventShortDtos = eventService.getAll(publicEventParams, uri, ipAddress);
@@ -1095,18 +1108,21 @@ public class EventServiceTest {
         verify(eventUtilService, times(1))
                 .getConfirmedRequestCountById(eventIds);
         verify(eventMapper, times(2))
-                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToShortDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
     }
 
     @Test
     public void pub_get_whenSuccessful_thenReturnEventFullDto() {
+        event1Pub.setInitiator(user);
+
         when(eventRepository.findByIdAndState(event1Pub.getId(), EventState.PUBLISHED))
                 .thenReturn(Optional.of(event1Pub));
-        when(userRatingService.getUserRating(event1Pub)).thenReturn(new HashMap<>());
+        when(ratingService.getUserRating(1L)).thenReturn(0L);
+        when(ratingService.getEventRating(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
-                (long) (event1Pub.getLikes().size() - event1Pub.getDislikes().size()), new HashMap<>()))
+                0L,0L))
                 .thenReturn(eventFullDtoPub);
         doNothing().when(statClient)
                 .hits(any(String.class), any(String.class), any(String.class), any(LocalDateTime.class));
@@ -1124,7 +1140,7 @@ public class EventServiceTest {
         verify(eventMapper, times(1)).convertEventToFullDto(event1,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
-                (long) (event1Pub.getLikes().size() - event1Pub.getDislikes().size()), new HashMap<>());
+                0L, 0L);
         verify(statClient, times(1))
                 .hits(any(String.class), any(String.class), any(String.class), any(LocalDateTime.class));
         verify(eventUtilService, times(1))
@@ -1143,7 +1159,7 @@ public class EventServiceTest {
         assertThat(exception.getMessage(), is("Event with id=" + wrongId + " was not found"));
         verify(eventRepository, times(1)).findByIdAndState(wrongId, EventState.PUBLISHED);
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(statClient, never())
                 .hits(any(String.class), any(String.class), any(String.class), any(LocalDateTime.class));
         verify(eventUtilService, never())
@@ -1164,7 +1180,7 @@ public class EventServiceTest {
         verify(eventRepository, times(1))
                 .findByIdAndState(event3NotPublished.getId(), EventState.PUBLISHED);
         verify(eventMapper, never())
-                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyMap());
+                .convertEventToFullDto(any(Event.class), anyInt(), anyLong(), anyLong(), anyLong());
         verify(statClient, never())
                 .hits(any(String.class), any(String.class), any(String.class), any(LocalDateTime.class));
         verify(eventUtilService, never())

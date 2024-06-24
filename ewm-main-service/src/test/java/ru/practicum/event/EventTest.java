@@ -49,6 +49,8 @@ public class EventTest {
 
     private final Sort sort = Sort.by("createdOn").descending();
     private final Pageable page = new OffsetPage(0, 10, sort);
+    private final Sort sortUsers = Sort.by("id").descending();
+    private final Pageable pageUsers = new OffsetPage(0, 10, sortUsers);
     private final long wrongId = Long.MAX_VALUE;
     private User user;
     private User user2;
@@ -714,7 +716,7 @@ public class EventTest {
     public void like_whenSuccessful_thenInitiatorRatingIncreased() {
         eventService.like(user2.getId(), event2.getId());
 
-        List<UserDto> users = userService.getAll(List.of(user.getId()), page);
+        List<UserDto> users = userService.getAll(List.of(user.getId()), pageUsers);
 
         assertThat(users.get(0).getRating(), is(1L));
     }
@@ -723,7 +725,7 @@ public class EventTest {
     public void dislike_whenSuccessful_thenInitiatorRatingDecreased() {
         eventService.dislike(user2.getId(), event2.getId());
 
-        List<UserDto> users = userService.getAll(List.of(user.getId()), page);
+        List<UserDto> users = userService.getAll(List.of(user.getId()), pageUsers);
 
         assertThat(users.get(0).getRating(), is(-1L));
     }
@@ -733,7 +735,7 @@ public class EventTest {
         eventService.like(user2.getId(), event2.getId());
         eventService.removeLike(user2.getId(), event2.getId());
 
-        List<UserDto> users = userService.getAll(List.of(user.getId()), page);
+        List<UserDto> users = userService.getAll(List.of(user.getId()), pageUsers);
 
         assertThat(users.get(0).getRating(), is(0L));
     }
@@ -743,7 +745,7 @@ public class EventTest {
         eventService.dislike(user2.getId(), event2.getId());
         eventService.removeDislike(user2.getId(), event2.getId());
 
-        List<UserDto> users = userService.getAll(List.of(user.getId()), page);
+        List<UserDto> users = userService.getAll(List.of(user.getId()), pageUsers);
 
         assertThat(users.get(0).getRating(), is(0L));
     }
@@ -754,8 +756,25 @@ public class EventTest {
         eventService.like(user33.getId(), event2.getId());
         eventService.dislike(user4.getId(), event2.getId());
 
-        List<UserDto> users = userService.getAll(List.of(user.getId()), page);
+        List<UserDto> users = userService.getAll(List.of(user.getId()), pageUsers);
 
         assertThat(users.get(0).getRating(), is(1L));
+    }
+
+    @Test
+    public void when_sortByRating_thenReturnListOfEventDtoSortedByRating() {
+        publicEventParams.setSort("RATING");
+        publicEventParams.setText(null);
+        publicEventParams.setCategories(null);
+        eventService.patch(event1.getId(), adminRequestPublish);
+        eventService.like(user2.getId(), event1.getId());
+        eventService.like(user2.getId(), event2.getId());
+        eventService.like(user33.getId(), event1.getId());
+
+        List<EventShortDto> events = eventService.getAll(publicEventParams, ipAddress, uri);
+
+        assertThat(events.size(), is(6));
+        assertThat(events.get(0).getRating(), is(2L));
+        assertThat(events.get(1).getRating(), is(1L));
     }
 }

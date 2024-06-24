@@ -6,23 +6,18 @@ import ru.practicum.user.User;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 @Entity
-@NamedEntityGraph(name = "event.category.location.user.likesAndDislikes", attributeNodes = {
+@NamedEntityGraph(name = "event.category.location.user", attributeNodes = {
         @NamedAttributeNode("category"),
         @NamedAttributeNode("location"),
-        @NamedAttributeNode("initiator"),
-        @NamedAttributeNode(value = "likes"),
-        @NamedAttributeNode(value = "dislikes")
+        @NamedAttributeNode("initiator")
 })
 @Table(name = "events")
 @Getter
 @Setter
 @ToString
-//@RequiredArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @NoArgsConstructor
@@ -46,24 +41,6 @@ public class Event {
     @JoinColumn(name = "initiator_id")
     @ToString.Exclude
     private User initiator;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "event_user_like",
-            joinColumns = @JoinColumn(name = "event_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    @ToString.Exclude
-    private final Set<User> likes = new HashSet<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "event_user_dislike",
-            joinColumns = @JoinColumn(name = "event_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    @ToString.Exclude
-    private final Set<User> dislikes = new HashSet<>();
 
     private String annotation;
     private String description;

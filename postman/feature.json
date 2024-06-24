@@ -622,6 +622,111 @@
 			"response": []
 		},
 		{
+			"name": "События отсортированы по рейтингу",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const main = async () => {",
+							"    const api = new API(pm);",
+							"    const rnd = new RandomUtils();",
+							"",
+							"    try {",
+							"        const initiator = await api.addUser(rnd.getUser());",
+							"        const user = await api.addUser(rnd.getUser());",
+							"        const user2 = await api.addUser(rnd.getUser());",
+							"        const user3 = await api.addUser(rnd.getUser());",
+							"        const user4 = await api.addUser(rnd.getUser());",
+							"        const user5 = await api.addUser(rnd.getUser());",
+							"        const category = await api.addCategory(rnd.getCategory());",
+							"        const event = await api.addEvent(initiator.id, rnd.getEvent(category.id));",
+							"        const event1 = await api.addEvent(initiator.id, rnd.getEvent(category.id));",
+							"        ",
+							"        await api.publishEvent(event.id);",
+							"        await api.publishEvent(event1.id);",
+							"",
+							"        await api.like(user.id, event.id);",
+							"        await api.like(user2.id, event.id);",
+							"        await api.like(user3.id, event.id);",
+							"        await api.like(user4.id, event.id);",
+							"        await api.like(user5.id, event.id);",
+							"        await api.like(user.id, event1.id);",
+							"        await api.like(user2.id, event1.id);",
+							"        await api.like(user3.id, event1.id);",
+							"        await api.like(user4.id, event1.id);",
+							"",
+							"        pm.collectionVariables.set(\"response\", JSON.stringify(event));",
+							"",
+							"        console.log(\"Предварительный скрипт выполнен успешно.\");",
+							"    } catch (err) {",
+							"        console.error(\"Ошибка при подготовке тестовых данных:\", err);",
+							"    }",
+							"};",
+							"",
+							"const interval = setInterval(() => {}, 1000);",
+							"",
+							"setTimeout(async () => {",
+							"    try {",
+							"        await main();",
+							"    } catch (e) {",
+							"        console.error(e);",
+							"    } finally {",
+							"        clearInterval(interval);",
+							"    }",
+							"}, 100);",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Ответ должен содержать код статуса 200 и данные в формате json\", function () {",
+							"    pm.response.to.be.ok;    ",
+							"    pm.response.to.be.withBody;",
+							"    pm.response.to.be.json;",
+							"});",
+							"",
+							"const target = pm.response.json();",
+							"pm.test(\"События должны быть отсортированы по рейтингу\", function () {",
+							"pm.expect(target[0]).to.have.property('rating');",
+							"pm.expect(target[0].rating).equal(5);",
+							"pm.expect(target[1]).to.have.property('rating');",
+							"pm.expect(target[1].rating).equal(4);",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/events?sort=RATING",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"events"
+					],
+					"query": [
+						{
+							"key": "sort",
+							"value": "RATING"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Пользователь ставит лайк неопубликованному событию",
 			"event": [
 				{
@@ -1303,6 +1408,10 @@
 			"key": "iid",
 			"value": "0",
 			"type": "string"
+		},
+		{
+			"key": "eid2",
+			"value": ""
 		}
 	]
 }

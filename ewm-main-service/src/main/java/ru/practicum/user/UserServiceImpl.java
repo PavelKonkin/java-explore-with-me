@@ -3,23 +3,28 @@ package ru.practicum.user;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import ru.practicum.event.RatingService;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 
-import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final RatingService ratingService;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, UserMapper userMapper) {
+    public UserServiceImpl(UserRepository userRepository,
+                           UserMapper userMapper,
+                           RatingService ratingService) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
+        this.ratingService = ratingService;
     }
 
     @Override
@@ -33,14 +38,13 @@ public class UserServiceImpl implements UserService {
         if (ids == null || ids.isEmpty()) {
             ids = List.of();
         }
-        List<Object[]> userObj = userRepository.findAllInIds(ids, ids.size(), page.getPageSize(), page.getOffset());
-        return userObj.stream()
-                .map(result -> new UserDto(
-                        ((BigInteger) result[0]).longValue(),
-                        (String) result[1],
-                        (String) result[2],
-                        ((BigInteger) result[3]).longValue()
-                ))
+
+        List<UserDto> users = userRepository.findAllInIds(ids, ids.size(), page);
+        Map<Long, Long> usersRating = ratingService.getUsersRating(users.stream()
+                .map(UserDto::getId)
+                .collect(Collectors.toList()));
+        return users.stream()
+                .peek(dto -> dto.setRating(usersRating.getOrDefault(dto.getId(), 0L)))
                 .collect(Collectors.toList());
     }
 

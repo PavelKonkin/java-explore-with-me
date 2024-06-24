@@ -12,20 +12,19 @@ import java.util.Optional;
 public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecificationExecutor<Event> {
     Optional<Event> findFirstByCategoryId(Long id);
 
-
-    @EntityGraph(value = "event.category.location.user.likesAndDislikes")
+    @EntityGraph(value = "event.category.location.user")
     @Query(" select e from Event e where e.id = ?1 ")
     Optional<Event> findByIdWithGraph(Long id);
 
-    @EntityGraph(value = "event.category.location.user.likesAndDislikes")
+    @EntityGraph(value = "event.category.location.user")
     List<Event> findAllByIdIn(List<Long> events);
 
-    @EntityGraph(value = "event.category.location.user.likesAndDislikes",  type = EntityGraph.EntityGraphType.LOAD)
+    @EntityGraph(value = "event.category.location.user",  type = EntityGraph.EntityGraphType.LOAD)
     List<Event> findAllByInitiatorId(long userId, Pageable page);
 
-    @EntityGraph(value = "event.category.location.user.likesAndDislikes")
+    @EntityGraph(value = "event.category.location.user")
     Optional<Event> findByIdAndInitiatorId(long eventId, long userId);
 
-    @EntityGraph(value = "event.category.location.user.likesAndDislikes")
+    @EntityGraph(value = "event.category.location.user")
     Optional<Event> findByIdAndState(long eventId, EventState eventState);
 }
