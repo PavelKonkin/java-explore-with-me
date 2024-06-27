@@ -3,7 +3,8 @@ package ru.practicum.user;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import ru.practicum.event.RatingService;
+import ru.practicum.event.EventUserRatingRepository;
+import ru.practicum.event.dto.RatingDto;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
@@ -16,15 +17,15 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final RatingService ratingService;
+    private final EventUserRatingRepository eventUserRatingRepository;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository,
                            UserMapper userMapper,
-                           RatingService ratingService) {
+                           EventUserRatingRepository eventUserRatingRepository) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
-        this.ratingService = ratingService;
+        this.eventUserRatingRepository = eventUserRatingRepository;
     }
 
     @Override
@@ -40,9 +41,13 @@ public class UserServiceImpl implements UserService {
         }
 
         List<UserDto> users = userRepository.findAllInIds(ids, ids.size(), page);
-        Map<Long, Long> usersRating = ratingService.getUsersRating(users.stream()
+        Map<Long, Long> usersRating = eventUserRatingRepository.findUsersRatingByUserIds(users.stream()
                 .map(UserDto::getId)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList())).stream()
+                .collect(Collectors.toMap(
+                        RatingDto::getId,  // eventId
+                        RatingDto::getRating    // rating
+                ));;
         return users.stream()
                 .peek(dto -> dto.setRating(usersRating.getOrDefault(dto.getId(), 0L)))
                 .collect(Collectors.toList());

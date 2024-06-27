@@ -36,7 +36,6 @@ public class EventServiceImpl implements EventService {
     private final ParticipationRequestRepository requestRepository;
     private final ParticipationRequestMapper requestMapper;
     private final StatClient statClient;
-    private final RatingService ratingService;
     private final EventUserRatingRepository eventUserRatingRepository;
 
 
@@ -55,7 +54,6 @@ public class EventServiceImpl implements EventService {
                             ParticipationRequestRepository requestRepository,
                             ParticipationRequestMapper requestMapper,
                             StatClient statClient,
-                            RatingService ratingService,
                             EventUserRatingRepository eventUserRatingRepository) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
@@ -66,7 +64,6 @@ public class EventServiceImpl implements EventService {
         this.requestRepository = requestRepository;
         this.requestMapper = requestMapper;
         this.statClient = statClient;
-        this.ratingService = ratingService;
         this.eventUserRatingRepository = eventUserRatingRepository;
     }
 
@@ -230,8 +227,8 @@ public class EventServiceImpl implements EventService {
         Event updatedEvent = getEventFullDto(existentEvent, updateRequest);
         updatedEvent = eventRepository.save(updatedEvent);
 
-        Long eventRating = ratingService.getEventRating(eventId);
-        Long userRating = ratingService.getUserRating(updatedEvent.getInitiator().getId());
+        Long eventRating = eventUserRatingRepository.findEventRatingByEventId(eventId);
+        Long userRating = eventUserRatingRepository.findUserRatingByUserId(updatedEvent.getInitiator().getId());
 
         return eventMapper.convertEventToFullDto(updatedEvent, 0, 0L,
                 eventRating, userRating);
@@ -289,8 +286,8 @@ public class EventServiceImpl implements EventService {
         Map<Long, Integer> hits = eventUtilService.getHitsByEvent(List.of(eventId));
         Map<Long, Long> confirmedRequests = eventUtilService.getConfirmedRequestCountById(List.of(eventId));
 
-        Long eventRating = ratingService.getEventRating(eventId);
-        Long userRating = ratingService.getUserRating(event.getInitiator().getId());
+        Long eventRating = eventUserRatingRepository.findEventRatingByEventId(eventId);
+        Long userRating = eventUserRatingRepository.findUserRatingByUserId(event.getInitiator().getId());
 
         return eventMapper.convertEventToFullDto(event,
                 hits.getOrDefault(eventId, 0),
@@ -409,8 +406,8 @@ public class EventServiceImpl implements EventService {
         Event updatedEvent = resultEvent.build();
         updatedEvent = eventRepository.save(updatedEvent);
 
-        Long eventRating = ratingService.getEventRating(updatedEvent.getId());
-        Long userRating = ratingService.getUserRating(updatedEvent.getInitiator().getId());
+        Long eventRating = eventUserRatingRepository.findEventRatingByEventId(updatedEvent.getId());
+        Long userRating = eventUserRatingRepository.findUserRatingByUserId(updatedEvent.getInitiator().getId());
 
         return eventMapper.convertEventToFullDto(updatedEvent, 0, 0L,
                 eventRating, userRating);
@@ -426,8 +423,8 @@ public class EventServiceImpl implements EventService {
         int views = hitByEvent.getOrDefault(eventId, 0);
         long confirmedRequestsCount = confirmedRequest.getOrDefault(eventId, 0L);
 
-        Long eventRating = ratingService.getEventRating(eventId);
-        Long userRating = ratingService.getUserRating(copyOfEvent.getInitiator().getId());
+        Long eventRating = eventUserRatingRepository.findEventRatingByEventId(eventId);
+        Long userRating = eventUserRatingRepository.findUserRatingByUserId(copyOfEvent.getInitiator().getId());
 
         return eventMapper.convertEventToFullDto(copyOfEvent, views, confirmedRequestsCount, eventRating,
                 userRating);
@@ -554,11 +551,19 @@ public class EventServiceImpl implements EventService {
             confirmedRequestCount = new HashMap<>();
         }
 
-        Map<Long, Long> usersRating = ratingService.getUsersRating(events.stream()
+        Map<Long, Long> usersRating = eventUserRatingRepository.findUsersRatingByUserIds(events.stream()
                 .map(el -> el.getInitiator().getId())
                 .distinct()
-                .collect(Collectors.toList()));
-        Map<Long, Long> eventsRating = ratingService.getEventsRating(eventIds);
+                .collect(Collectors.toList())).stream()
+                .collect(Collectors.toMap(
+                        RatingDto::getId,  // eventId
+                        RatingDto::getRating    // rating
+                ));
+        Map<Long, Long> eventsRating = eventUserRatingRepository.findRatingOfEventsByEventIds(eventIds).stream()
+                .collect(Collectors.toMap(
+                        RatingDto::getId,  // eventId
+                        RatingDto::getRating    // rating
+                ));
 
         Map<String, Map<Long, ?>> result = new HashMap<>();
         result.put("hits", hitsById);

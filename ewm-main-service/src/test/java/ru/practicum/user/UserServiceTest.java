@@ -8,13 +8,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import ru.practicum.event.RatingService;
+import ru.practicum.event.EventUserRatingRepository;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.page.OffsetPage;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,7 +30,7 @@ public class UserServiceTest {
     @Mock
     private UserMapper userMapper;
     @Mock
-    private RatingService ratingService;
+    private EventUserRatingRepository eventUserRatingRepository;
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -120,7 +119,8 @@ public class UserServiceTest {
     void getAll_whenThereAreUsers_thenReturnListOfUserDtos() {
         List<UserDto> expectedUserDtos = List.of(userDto1, userDto2);
         when(userRepository.findAllInIds(List.of(), 0, page)).thenReturn(expectedUserDtos);
-        when(ratingService.getUsersRating(List.of(userDto1.getId(), userDto2.getId()))).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of(userDto1.getId(), userDto2.getId())))
+                .thenReturn(List.of());
 
 
         List<UserDto> actualUserDtos = userService.getAll(null, page);

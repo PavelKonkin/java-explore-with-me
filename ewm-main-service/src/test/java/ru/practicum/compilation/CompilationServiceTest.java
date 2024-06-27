@@ -45,7 +45,7 @@ public class CompilationServiceTest {
     @Mock
     private EventUtilService eventUtilService;
     @Mock
-    private RatingService ratingService;
+    EventUserRatingRepository eventUserRatingRepository;
     @InjectMocks
     private CompilationServiceImpl compilationService;
 
@@ -321,8 +321,8 @@ public class CompilationServiceTest {
                 .thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds))
                 .thenReturn(confirmedRequestCount);
-        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
-        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findRatingOfEventsByEventIds(List.of(1L, 2L))).thenReturn(List.of());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of(1L))).thenReturn(List.of());
         when(eventMapper.convertEventToShortDto(event1, hitsByEvent.getOrDefault(event1.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1.getId(), 0L),
                 0L, 0L))
@@ -404,7 +404,7 @@ public class CompilationServiceTest {
                 .thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds))
                 .thenReturn(confirmedRequestCount);
-        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of(1L))).thenReturn(List.of());
         when(eventMapper.convertEventToShortDto(event3,
                 hitsByEvent.getOrDefault(event3.getId(), 0),
                 confirmedRequestCount.getOrDefault(event3.getId(), 0L),
@@ -471,8 +471,8 @@ public class CompilationServiceTest {
                 .thenReturn(confirmedRequestCount);
         when(eventUtilService.getConfirmedRequestCountById(List.of(event2Pub.getId())))
                 .thenReturn(confirmedRequestCount);
-        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
-        when(ratingService.getEventsRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of(1L))).thenReturn(List.of());
+        when(eventUserRatingRepository.findRatingOfEventsByEventIds(List.of(1L))).thenReturn(List.of());
         when(eventMapper.convertEventToShortDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
@@ -528,8 +528,8 @@ public class CompilationServiceTest {
                 .thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(List.of(event1Pub.getId())))
                 .thenReturn(confirmedRequestCount);
-        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
-        when(ratingService.getEventsRating(List.of(1L))).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of(1L))).thenReturn(List.of());
+        when(eventUserRatingRepository.findRatingOfEventsByEventIds(List.of(1L))).thenReturn(List.of());
         when(eventMapper.convertEventToShortDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),

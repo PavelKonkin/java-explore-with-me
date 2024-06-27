@@ -8,6 +8,7 @@ import ru.practicum.compilation.dto.NewCompilationDto;
 import ru.practicum.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.event.*;
 import ru.practicum.event.dto.EventShortDto;
+import ru.practicum.event.dto.RatingDto;
 import ru.practicum.exception.NotFoundException;
 
 import javax.transaction.Transactional;
@@ -21,7 +22,7 @@ public class CompilationServiceImpl implements CompilationService {
     private final CompilationMapper compilationMapper;
     private final EventMapper eventMapper;
     private final EventUtilService eventUtilService;
-    private final RatingService ratingService;
+    private final EventUserRatingRepository eventUserRatingRepository;
 
     @Autowired
     public CompilationServiceImpl(CompilationRepository compilationRepository,
@@ -29,13 +30,13 @@ public class CompilationServiceImpl implements CompilationService {
                                   CompilationMapper compilationMapper,
                                   EventMapper eventMapper,
                                   EventUtilService eventUtilService,
-                                  RatingService ratingService) {
+                                  EventUserRatingRepository eventUserRatingRepository) {
         this.compilationRepository = compilationRepository;
         this.eventRepository = eventRepository;
         this.compilationMapper = compilationMapper;
         this.eventMapper = eventMapper;
         this.eventUtilService = eventUtilService;
-        this.ratingService = ratingService;
+        this.eventUserRatingRepository = eventUserRatingRepository;
     }
 
     @Override
@@ -162,11 +163,20 @@ public class CompilationServiceImpl implements CompilationService {
 
         Map<Long, Integer> hitsByEvent = eventUtilService.getHitsByEvent(eventIds);
         Map<Long, Long> confirmedRequestCountById = eventUtilService.getConfirmedRequestCountById(eventIds);
-        Map<Long, Long> usersRating = ratingService.getUsersRating(events.stream()
+        Map<Long, Long> usersRating = eventUserRatingRepository.findUsersRatingByUserIds(events.stream()
                 .map(el -> el.getInitiator().getId())
                 .distinct()
-                .collect(Collectors.toList()));
-        Map<Long, Long> eventsRating = ratingService.getEventsRating(eventIds);
+                .collect(Collectors.toList())).stream()
+                .collect(Collectors.toMap(
+                        RatingDto::getId,  // eventId
+                        RatingDto::getRating    // rating
+                ));
+        Map<Long, Long> eventsRating = eventUserRatingRepository.findRatingOfEventsByEventIds(eventIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        RatingDto::getId,  // eventId
+                        RatingDto::getRating    // rating
+                ));
 
         return events.stream()
                 .map(event -> eventMapper.convertEventToShortDto(event,

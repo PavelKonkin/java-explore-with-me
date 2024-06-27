@@ -57,7 +57,7 @@ public class EventServiceTest {
     @Mock
     private StatClient statClient;
     @Mock
-    private RatingService ratingService;
+    private EventUserRatingRepository eventUserRatingRepository;
     @InjectMocks
     private EventServiceImpl eventService;
 
@@ -358,8 +358,8 @@ public class EventServiceTest {
         List<Long> eventIds = List.of(event1.getId(), event2.getId());
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(eventRepository.findAllByInitiatorId(user.getId(), page)).thenReturn(List.of(event1, event2));
-        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
-        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of(1L))).thenReturn(List.of());
+        when(eventUserRatingRepository.findRatingOfEventsByEventIds(List.of(1L, 2L))).thenReturn(List.of());
         when(eventMapper.convertEventToShortDto(event1,
                 hitsByEvent.getOrDefault(event1.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1.getId(), 0L),
@@ -474,7 +474,7 @@ public class EventServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
-        when(ratingService.getUserRating(1L)).thenReturn(0L);
+        when(eventUserRatingRepository.findUserRatingByUserId(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1,
                 hitsByEvent.getOrDefault(event1.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1.getId(), 0L),
@@ -538,7 +538,7 @@ public class EventServiceTest {
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
         when(eventRepository.save(event1Updated)).thenReturn(event1Updated);
-        when(ratingService.getUserRating(1L)).thenReturn(0L);
+        when(eventUserRatingRepository.findUserRatingByUserId(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1Updated,0, 0L,
                 0L, 0L))
                 .thenReturn(eventFullDtoUpdated1);
@@ -622,7 +622,7 @@ public class EventServiceTest {
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
         when(eventRepository.save(event1Updated)).thenReturn(event1Updated);
-        when(ratingService.getUserRating(1L)).thenReturn(0L);
+        when(eventUserRatingRepository.findUserRatingByUserId(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1Updated,0, 0L,
                 0L, 0L))
                 .thenReturn(eventFullDtoUpdated1);
@@ -649,7 +649,7 @@ public class EventServiceTest {
         when(eventRepository.findByIdAndInitiatorId(event1.getId(), user.getId()))
                 .thenReturn(Optional.of(event1));
         when(eventRepository.save(event1Updated)).thenReturn(event1Updated);
-        when(ratingService.getUserRating(1L)).thenReturn(0L);
+        when(eventUserRatingRepository.findUserRatingByUserId(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1Updated, 0,0L,
                 0L, 0L))
                 .thenReturn(eventFullDtoUpdated1);
@@ -936,8 +936,8 @@ public class EventServiceTest {
                 .thenReturn(new PageImpl<>(List.of(event1Adm, event2Adm)));
         when(eventUtilService.getHitsByEvent(eventIds)).thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds)).thenReturn(confirmedRequestCount);
-        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
-        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of(1L))).thenReturn(List.of());
+        when(eventUserRatingRepository.findRatingOfEventsByEventIds(List.of(1L, 2L))).thenReturn(List.of());
         when(eventMapper.convertEventToFullDto(event1Adm, hitsByEvent.getOrDefault(event1Adm.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Adm.getId(), 0L),
                 0L, 0L))
@@ -963,7 +963,7 @@ public class EventServiceTest {
         List<Long> eventIds = List.of();
         when(eventRepository.findAll(any(Specification.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of()));
-        when(ratingService.getUsersRating(List.of())).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of())).thenReturn(List.of());
         List<EventFullDto> actualListOfEventFullDto = eventService.getAll(adminEventParams);
 
         assertThat(List.of(), is(actualListOfEventFullDto));
@@ -982,8 +982,8 @@ public class EventServiceTest {
 
         when(eventRepository.findById(event1Adm.getId())).thenReturn(Optional.of(event1Adm));
         when(eventRepository.save(event1UpdatedAdm)).thenReturn(event1UpdatedAdm);
-        when(ratingService.getEventRating(1L)).thenReturn(0L);
-        when(ratingService.getUserRating(1L)).thenReturn(0L);
+        when(eventUserRatingRepository.findEventRatingByEventId(1L)).thenReturn(0L);
+        when(eventUserRatingRepository.findUserRatingByUserId(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1UpdatedAdm,0, 0L,
                 0L, 0L))
                 .thenReturn(eventFullDto1ToUpdateAdm);
@@ -1042,8 +1042,8 @@ public class EventServiceTest {
         when(eventRepository.findAll(any(Specification.class))).thenReturn(List.of(event1Pub, event2Pub));
         when(eventUtilService.getHitsByEvent(eventIds)).thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds)).thenReturn(confirmedRequestCount);
-        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
-        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of(1L))).thenReturn(List.of());
+        when(eventUserRatingRepository.findRatingOfEventsByEventIds(List.of(1L, 2L))).thenReturn(List.of());
         when(eventMapper.convertEventToShortDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
@@ -1083,8 +1083,8 @@ public class EventServiceTest {
                 .thenReturn(hitsByEvent);
         when(eventUtilService.getConfirmedRequestCountById(eventIds))
                 .thenReturn(confirmedRequestCount);
-        when(ratingService.getUsersRating(List.of(1L))).thenReturn(new HashMap<>());
-        when(ratingService.getEventsRating(List.of(1L, 2L))).thenReturn(new HashMap<>());
+        when(eventUserRatingRepository.findUsersRatingByUserIds(List.of(1L))).thenReturn(List.of());
+        when(eventUserRatingRepository.findRatingOfEventsByEventIds(List.of(1L, 2L))).thenReturn(List.of());
         when(eventMapper.convertEventToShortDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
@@ -1117,8 +1117,8 @@ public class EventServiceTest {
 
         when(eventRepository.findByIdAndState(event1Pub.getId(), EventState.PUBLISHED))
                 .thenReturn(Optional.of(event1Pub));
-        when(ratingService.getUserRating(1L)).thenReturn(0L);
-        when(ratingService.getEventRating(1L)).thenReturn(0L);
+        when(eventUserRatingRepository.findUserRatingByUserId(1L)).thenReturn(0L);
+        when(eventUserRatingRepository.findEventRatingByEventId(1L)).thenReturn(0L);
         when(eventMapper.convertEventToFullDto(event1Pub,
                 hitsByEvent.getOrDefault(event1Pub.getId(), 0),
                 confirmedRequestCount.getOrDefault(event1Pub.getId(), 0L),
