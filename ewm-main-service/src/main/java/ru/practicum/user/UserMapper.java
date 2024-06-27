@@ -14,18 +14,20 @@ public class UserMapper {
                 .build();
     }
 
-    public UserDto convertUser(User user) {
+    public UserDto convertUser(User user, Long rating) {
         return UserDto.builder()
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .rating(rating)
                 .build();
     }
 
-    public UserShortDto convertUserToShortDto(User user) {
+    public UserShortDto convertUserToShortDto(User user, Long rating) {
         return UserShortDto.builder()
                 .id(user.getId())
                 .name(user.getName())
+                .rating(rating)
                 .build();
     }
 }

@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import ru.practicum.adminapi.UserService;
 import ru.practicum.page.OffsetPage;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
@@ -42,7 +41,7 @@ public class UserTest {
                 .email("user@email.test")
                 .build();
         userRepository.save(user);
-        userDto = userMapper.convertUser(user);
+        userDto = userMapper.convertUser(user, 0L);
         userToCreate = NewUserRequest.builder()
                 .name("user create name")
                 .email("user_create@email.test")

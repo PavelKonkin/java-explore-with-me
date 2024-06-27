@@ -33,7 +33,7 @@ public class PublicEventParams implements EventParams {
 
     private Boolean onlyAvailable = false;
 
-    @Pattern(regexp = "EVENT_DATE|VIEWS")
+    @Pattern(regexp = "EVENT_DATE|VIEWS|RATING")
     private String sort;
 
     @Min(0)

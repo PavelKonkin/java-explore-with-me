@@ -20,7 +20,11 @@ public class EventMapper {
         this.locationMapper = locationMapper;
     }
 
-    public EventShortDto convertEventToShortDto(Event event, Integer views, Long confirmedRequests) {
+    public EventShortDto convertEventToShortDto(Event event,
+                                                Integer views,
+                                                Long confirmedRequests,
+                                                Long rating,
+                                                Long userRating) {
         return EventShortDto.builder()
                 .paid(event.isPaid())
                 .title(event.getTitle())
@@ -28,20 +32,26 @@ public class EventMapper {
                 .id(event.getId())
                 .category(categoryMapper.convertCategory(event.getCategory()))
                 .annotation(event.getAnnotation())
-                .initiator(userMapper.convertUserToShortDto(event.getInitiator()))
+                .initiator(userMapper.convertUserToShortDto(event.getInitiator(), userRating))
                 .views(views)
                 .confirmedRequests(confirmedRequests)
+                .rating(rating)
                 .build();
     }
 
-    public EventFullDto convertEventToFullDto(Event event, Integer views, Long confirmedRequests) {
+    public EventFullDto convertEventToFullDto(Event event,
+                                              Integer views,
+                                              Long confirmedRequests,
+                                              Long rating,
+                                              Long userRating) {
         return EventFullDto.builder()
                 .id(event.getId())
                 .eventDate(event.getEventDate())
                 .annotation(event.getAnnotation())
                 .title(event.getTitle())
                 .description(event.getDescription())
-                .initiator(userMapper.convertUserToShortDto(event.getInitiator()))
+                .initiator(userMapper.convertUserToShortDto(event.getInitiator(),
+                                userRating))
                 .category(categoryMapper.convertCategory(event.getCategory()))
                 .createdOn(event.getCreatedOn())
                 .publishedOn(event.getPublishedOn())
@@ -52,6 +62,7 @@ public class EventMapper {
                 .requestModeration(event.isRequestModeration())
                 .views(views)
                 .confirmedRequests(confirmedRequests)
+                .rating(rating)
                 .build();
     }
 

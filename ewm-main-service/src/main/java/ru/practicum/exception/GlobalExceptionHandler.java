@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import javax.validation.ConstraintViolationException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.LocalDateTime;
@@ -56,7 +57,9 @@ public class GlobalExceptionHandler {
 
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, InvalidDataAccessApiUsageException.class})
+    @ExceptionHandler({IllegalArgumentException.class,
+            InvalidDataAccessApiUsageException.class,
+            ConstraintViolationException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleValidationException(Throwable ex) {
         log.info("Ошибка валидации {}", ex.getMessage());

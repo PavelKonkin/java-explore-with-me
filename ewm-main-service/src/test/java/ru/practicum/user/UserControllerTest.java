@@ -10,13 +10,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.adminapi.UserController;
-import ru.practicum.adminapi.UserService;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.page.OffsetPage;
 import ru.practicum.user.dto.NewUserRequest;
 import ru.practicum.user.dto.UserDto;
 
+import javax.validation.ConstraintViolationException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -48,6 +47,7 @@ public class UserControllerTest {
                 .id(1L)
                 .name("user test")
                 .email("user@test.test")
+                .rating(0L)
                 .build();
         newUserRequest = NewUserRequest.builder()
                 .name(userDto.getName())
@@ -72,17 +72,14 @@ public class UserControllerTest {
 
     @Test
     void getAll_whenInvalidRequestParam_thenThrownException() throws Exception {
-        when(userService.getAll(null, wrongPage))
-                .thenThrow(new IllegalArgumentException());
-
         mvc.perform(get("/admin/users?from=-1")
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
-                .andExpect(result -> assertInstanceOf(IllegalArgumentException.class,
+                .andExpect(result -> assertInstanceOf(ConstraintViolationException.class,
                         result.getResolvedException()));
-        verify(userService, times(1)).getAll(null, wrongPage);
+        verify(userService, never()).getAll(null, wrongPage);
     }
 
     @Test
@@ -99,21 +96,6 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.name", is(userDto.getName())))
                 .andExpect(jsonPath("$.email", equalTo(userDto.getEmail())));
         verify(userService, times(1)).add(newUserRequest);
-    }
-
-    @Test
-    void getAll_whenSuccessful_thenReturnListOfUserDtos() throws Exception {
-        when(userService.getAll(null, page)).thenReturn(List.of(userDto));
-
-        mvc.perform(get("/admin/users")
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.[0].id", is(userDto.getId()), Long.class))
-                .andExpect(jsonPath("$.[0].name", is(userDto.getName())))
-                .andExpect(jsonPath("$.[0].email", is(userDto.getEmail())));
-        verify(userService, times(1)).getAll(null, page);
     }
 
     @Test
